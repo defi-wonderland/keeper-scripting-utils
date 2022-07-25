@@ -1,0 +1,9 @@
+{
+  "cookiesToEat": 3,
+  "log": {
+    "file": {
+      "level": "warn",
+      "filename": "logs/important.log"
+    }
+  }
+}
