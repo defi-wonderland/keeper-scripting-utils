@@ -18,6 +18,7 @@ export async function run(config: Config): Promise<void> {
 if (!process.env.TEST_MODE) {
 	(async () => {
 		const config = await loadConfig();
+
 		Logger.setLogConfig(config.log);
 		run(config);
 	})();

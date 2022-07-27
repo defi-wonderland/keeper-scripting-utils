@@ -8,3 +8,7 @@ export interface Config extends BasicConfig {
 	flashbotRelays: string[];
 	simulateBundle: boolean;
 }
+
+export interface GenericJSONValidator<T> {
+	validate: (fileToValidate: Record<string, any>) => T;
+}
