@@ -1,18 +1,24 @@
-import { CookieService } from './services/cookie.service';
+import { emitWhenCloseToBlock, stopBlocks } from './subscriptions/blocks';
 import { Config, loadConfig } from './utils/config';
 import { Logger } from './utils/logger';
+import { providers } from 'ethers';
 
 export async function run(config: Config): Promise<void> {
-	const log = Logger.getServiceLogger('main');
-	const cookieService = new CookieService();
+	const provider = new providers.WebSocketProvider('wss://eth-mainnet.g.alchemy.com/v2/<ALCHEMY_KEY>');
+	const now = Date.now() / 1000;
+	const seconds = 10;
 
-	log.debug('Starting to eat...');
+	console.log('started cooldown observable');
+	emitWhenCloseToBlock(provider, now + seconds, 5).subscribe(async (block) => {
+		console.log('Job is close to be off cooldown');
 
-	for (let index = 0; index < config.cookiesToEat; index++) {
-		cookieService.eat();
-	}
+		// on complex job run some extra needed checks like job.workable().
 
-	log.debug('Finished eating');
+		// ready to work:
+		stopBlocks(provider);
+		// send tx with flashbots
+		run(config);
+	});
 }
 
 if (!process.env.TEST_MODE) {
