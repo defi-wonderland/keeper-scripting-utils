@@ -1,10 +1,19 @@
 import { emitWhenCloseToBlock, stopBlocks } from './subscriptions/blocks';
 import { Config, loadConfig } from './utils/config';
+import { getNodeUrlWss, getPrivateKey } from './utils/env';
 import { Logger } from './utils/logger';
 import { providers } from 'ethers';
 
+const dotenv = require('dotenv');
+dotenv.config();
+
 export async function run(config: Config): Promise<void> {
-	const provider = new providers.WebSocketProvider('wss://eth-mainnet.g.alchemy.com/v2/<ALCHEMY_KEY>');
+	const network = 'goerli';
+
+	const nodeUrl = getNodeUrlWss(network);
+	const provider = new providers.WebSocketProvider(nodeUrl);
+	const PK = getPrivateKey(network);
+
 	const now = Date.now() / 1000;
 	const seconds = 10;
 
