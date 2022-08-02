@@ -38,14 +38,13 @@ export async function run(config?: Config): Promise<void> {
 	// 0 = basic
 	// 1 = complex
 	const [lastWorkAt, cooldown]: BigNumber[] = await Promise.all([job.lastWorkAt(0), job.workCooldown()]);
-	const readyToWorkAt = lastWorkAt.add(cooldown);
 
 	const secondsBefore = 10;
 	const priorityFee = 10; // TODO DEHARDCODE
 	const gasLimit = 1_000_000; // TODO DEHARDCODE
 
 	console.log('started cooldown observable');
-	emitWhenCloseToBlock(provider, readyToWorkAt, secondsBefore).subscribe(async (block) => {
+	emitWhenCloseToBlock(provider, lastWorkAt, cooldown, secondsBefore).subscribe(async (block) => {
 		console.log('Job is close to be off cooldown');
 		const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots(
 			job,

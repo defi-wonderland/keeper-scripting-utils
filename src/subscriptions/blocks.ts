@@ -1,4 +1,4 @@
-import { startCooldown } from './cooldown';
+import { emitWhenCloseToCooldown } from './cooldown';
 import { Block } from '@ethersproject/abstract-provider';
 import { BigNumber, providers } from 'ethers';
 import { mergeMap, Observable, share, Subject } from 'rxjs';
@@ -16,11 +16,12 @@ export function getNewBlocks(provider: providers.BaseProvider): Observable<Block
 
 export function emitWhenCloseToBlock(
 	provider: providers.BaseProvider,
-	readyToWorkAt: BigNumber,
+	lastWorkAt: BigNumber,
+	workCooldown: BigNumber,
 	emitSecondsBefore: number
 ): Observable<Block> {
 	const block$ = getNewBlocks(provider);
-	return startCooldown(readyToWorkAt, emitSecondsBefore).pipe(mergeMap(() => block$));
+	return emitWhenCloseToCooldown(lastWorkAt, workCooldown, emitSecondsBefore).pipe(mergeMap(() => block$));
 }
 
 export function stopBlocks(provider: providers.BaseProvider): void {
