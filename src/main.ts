@@ -5,7 +5,7 @@ import { prepareFirstBundlesForFlashbots, sendAndRetryUntilNotWorkable } from '.
 import { Config, loadConfig } from './utils/config';
 import { getNodeUrlWss, getPrivateKey } from './utils/env';
 import { Logger } from './utils/logger';
-import { providers, Wallet, Contract, BigNumber } from 'ethers';
+import { providers, Wallet, Contract, BigNumber, ethers } from 'ethers';
 import { formatEther, parseUnits } from 'ethers/lib/utils';
 
 const dotenv = require('dotenv');
@@ -46,6 +46,7 @@ export async function run(config?: Config): Promise<void> {
 	console.log('started cooldown observable');
 	emitWhenCloseToBlock(provider, lastWorkAt, cooldown, secondsBefore).subscribe(async (block) => {
 		console.log('Job is close to be off cooldown');
+		const currentNonce = await provider.getTransactionCount(signer.address);
 		const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots(
 			job,
 			'basicWork',
@@ -54,6 +55,7 @@ export async function run(config?: Config): Promise<void> {
 			priorityFee,
 			gasLimit,
 			chainId,
+			currentNonce,
 			5,
 			1
 		);

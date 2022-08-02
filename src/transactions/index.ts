@@ -14,6 +14,7 @@ import { BundleBurstGroup, GasType2Parameters, PrepareFirstBundlesForFlashbotsRe
  * @param priorityFee The priority fee to be paid to the miner
  * @param gasLimit The desired gas limit to set for the transaction request
  * @param chainId The chainId of the chain where this job is located
+ * @param nonce The nonce to use for the submission of the transaction
  * @param futureBlocks How many blocks in the future to send the bundle
  * @param burstSize How many consecutives blocks do we want to send the bundle to
  * @param functionArgs The arguments of the function to be called. This will be used to populate the transaction fields
@@ -28,6 +29,7 @@ export async function prepareFirstBundlesForFlashbots(
 	priorityFee: number,
 	gasLimit: number,
 	chainId: number,
+	nonce: number,
 	futureBlocks: number,
 	burstSize: number,
 	...functionArgs: any[]
@@ -37,6 +39,7 @@ export async function prepareFirstBundlesForFlashbots(
 	});
 
 	tx.chainId = chainId;
+	tx.nonce = nonce;
 
 	const targetBlock = block.number + futureBlocks;
 	const blocksAhead = futureBlocks + burstSize; // done
