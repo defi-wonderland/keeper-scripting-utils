@@ -1,4 +1,3 @@
-import { Config } from '../types';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { Signer } from '@ethersproject/abstract-signer';
 import {
@@ -14,21 +13,27 @@ export class Flashbots {
 	private constructor(
 		private txSigner: Signer,
 		private flashbotsProviders: FlashbotsBundleProvider[],
-		private config: Config,
+		private shouldSimulateBundle: boolean,
 		private log: winston.Logger
 	) {}
 
-	static async init(txSigner: Signer, bundleSigner: Signer, config: Config, log: winston.Logger): Promise<Flashbots> {
-		const localProvider = new providers.JsonRpcProvider({ url: config.localRpc }, config.chainId);
-
+	static async init(
+		txSigner: Signer,
+		bundleSigner: Signer,
+		provider: providers.JsonRpcProvider | providers.WebSocketProvider,
+		flashbotRelayers: string[],
+		simulateBundle: boolean,
+		chainId: number,
+		log: winston.Logger
+	): Promise<Flashbots> {
 		// create a provider for every relay defined in the config
 		const flashbotsProviders = await Promise.all(
-			config.flashbotRelays.map((relay) => {
-				return FlashbotsBundleProvider.create(localProvider, bundleSigner, relay, config.chainId);
+			flashbotRelayers.map((relay) => {
+				return FlashbotsBundleProvider.create(provider, bundleSigner, relay, chainId);
 			})
 		);
 
-		return new Flashbots(txSigner, flashbotsProviders, config, log);
+		return new Flashbots(txSigner, flashbotsProviders, simulateBundle, log);
 	}
 
 	async send(unsignedTxs: TransactionRequest[], targetBlock: number): Promise<boolean> {
@@ -39,7 +44,7 @@ export class Flashbots {
 		}));
 
 		// simulate bundle if needed
-		const simulationPassed = this.config.simulateBundle
+		const simulationPassed = this.shouldSimulateBundle
 			? await this.simulateBundle(this.flashbotsProviders[0], bundle, targetBlock)
 			: true;
 

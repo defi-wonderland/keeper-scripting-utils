@@ -21,7 +21,6 @@ export const configLogSchema = yup.object({
 
 // config definition
 export const configSchema = yup.object({
-	cookiesToEat: yup.number().min(1).defined(),
 	log: configLogSchema,
 });
 

@@ -25,3 +25,8 @@ export interface GasType2Parameters {
 	priorityFee: BigNumber;
 	maxFeePerGas: BigNumber;
 }
+
+export interface PrepareFirstBundlesForFlashbotsReturnValue {
+	tx: TransactionRequest;
+	formattedBundles: BundleBurstGroup[];
+}

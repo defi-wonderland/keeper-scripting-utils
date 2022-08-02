@@ -2,7 +2,7 @@ import { Block, TransactionResponse, TransactionRequest } from '@ethersproject/a
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { BigNumber, Contract, providers, Signer, utils } from 'ethers';
 import { Flashbots } from 'src/flashbots/flashbots';
-import { BundleBurstGroup, GasType2Parameters } from 'src/types';
+import { BundleBurstGroup, GasType2Parameters, PrepareFirstBundlesForFlashbotsReturnValue } from 'src/types';
 
 /**
  * @notice Prepares the first set of flashbot bundles to be sent.
@@ -31,18 +31,23 @@ export async function prepareFirstBundlesForFlashbots(
 	futureBlocks: number,
 	burstSize: number,
 	...functionArgs: any[]
-): Promise<BundleBurstGroup[]> {
-	const tx: TransactionRequest = await job.connect(signer).populateTransaction[functionName](job.address, ...functionArgs, {
+): Promise<PrepareFirstBundlesForFlashbotsReturnValue> {
+	const tx: TransactionRequest = await job.connect(signer).populateTransaction[functionName](...functionArgs, {
 		gasLimit,
-		chainId,
 	});
+
+	tx.chainId = chainId;
 
 	const targetBlock = block.number + futureBlocks;
 	const blocksAhead = futureBlocks + burstSize; // done
 	const bundles = createBundles(tx, burstSize, targetBlock);
+	const formattedBundles = formatBundlesTxsToType2(bundles, block, priorityFee, blocksAhead);
 
 	// This should probably return the transaction aswell
-	return formatBundlesTxsToType2(bundles, block, priorityFee, blocksAhead);
+	return {
+		tx,
+		formattedBundles,
+	};
 }
 
 /**

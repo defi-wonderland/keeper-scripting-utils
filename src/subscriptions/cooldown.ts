@@ -1,12 +1,14 @@
+import { BigNumber } from 'ethers';
 import { Observable, share, Subject } from 'rxjs';
 
-export function startCooldown(readyToWorkAt: number, emitSecondsBefore: number): Observable<void> {
+export function startCooldown(readyToWorkAt: BigNumber, emitSecondsBefore: number): Observable<void> {
 	const cooldown$ = new Subject<void>();
-	const notificationTime = readyToWorkAt - emitSecondsBefore;
+	const notificationTime = readyToWorkAt.sub(emitSecondsBefore);
+	const time = notificationTime.mul(1000).sub(Date.now()).toNumber(); // notificationTime: seconds => milliseconds
 	const intervalId = setInterval(() => {
 		cooldown$.next();
 		clearInterval(intervalId);
-	}, notificationTime * 1000 - Date.now()); // notificationTime: seconds => milliseconds
+	}, time);
 
 	return cooldown$.pipe(share());
 }
