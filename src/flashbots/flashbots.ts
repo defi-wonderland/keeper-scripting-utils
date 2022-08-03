@@ -114,12 +114,13 @@ export class Flashbots {
 			const resolution = await response.wait();
 
 			if (resolution == FlashbotsBundleResolution.BundleIncluded) {
-				this.log.info(`Bundle status: BundleIncluded`);
+				this.log.info(`Bundle status ${targetBlock}: BundleIncluded`);
 				return true;
 			} else if (resolution == FlashbotsBundleResolution.BlockPassedWithoutInclusion) {
-				this.log.info(`Bundle status: BlockPassedWithoutInclusion`);
+				this.log.info(`Bundle status at ${targetBlock}: BlockPassedWithoutInclusion`);
 			} else if (resolution == FlashbotsBundleResolution.AccountNonceTooHigh) {
-				this.log.warn(`AccountNonceTooHigh`);
+				this.log.warn(`Bundle status at ${targetBlock}: AccountNonceTooHigh`);
+				return true;
 			}
 		} catch (err: unknown) {
 			this.log.warn(`Failed to send bundle`, { error: err });

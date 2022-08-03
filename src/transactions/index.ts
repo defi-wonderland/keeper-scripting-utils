@@ -18,6 +18,7 @@ import { BundleBurstGroup, GasType2Parameters, PrepareFirstBundlesForFlashbotsRe
  * @param futureBlocks How many blocks in the future to send the bundle
  * @param burstSize How many consecutives blocks do we want to send the bundle to
  * @param functionArgs The arguments of the function to be called. This will be used to populate the transaction fields
+ *
  * @returns An array of equal bundles with different target blocks
  */
 
@@ -32,12 +33,11 @@ export async function prepareFirstBundlesForFlashbots(
 	nonce: number,
 	futureBlocks: number,
 	burstSize: number,
-	...functionArgs: any[]
+	functionArgs: any[]
 ): Promise<PrepareFirstBundlesForFlashbotsReturnValue> {
 	const tx: TransactionRequest = await job.connect(signer).populateTransaction[functionName](...functionArgs, {
 		gasLimit,
 	});
-
 	tx.chainId = chainId;
 	tx.nonce = nonce;
 
@@ -80,7 +80,7 @@ export async function sendAndRetryUntilNotWorkable(
 	flashbots: Flashbots,
 	job: Contract,
 	functionName: string,
-	...functionArgs: any[]
+	functionArgs: any[]
 ): Promise<boolean> {
 	const firstBundleIncluded = await sendBundlesToFlashbots(bundles, flashbots);
 	if (!firstBundleIncluded) {
@@ -97,7 +97,7 @@ export async function sendAndRetryUntilNotWorkable(
 			bundles.length,
 			newBurstSize
 		);
-		sendAndRetryUntilNotWorkable(
+		return sendAndRetryUntilNotWorkable(
 			tx,
 			provider,
 			priorityFee,
@@ -106,10 +106,9 @@ export async function sendAndRetryUntilNotWorkable(
 			flashbots,
 			job,
 			functionName,
-			...functionArgs
+			functionArgs
 		);
 	}
-	console.log('Bundle submitted successfuly');
 	return true;
 }
 
