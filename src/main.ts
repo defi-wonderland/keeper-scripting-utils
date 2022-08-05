@@ -49,12 +49,12 @@ export async function runBasicJob(): Promise<void> {
 	console.log('started cooldown observable');
 	timer(time)
 		.pipe(
-			mergeMap(async () => await getNewBlocks(provider)),
-			mergeMap((x) => x),
+			mergeMap(() => getNewBlocks(provider)),
 			take(1)
 		)
 		.subscribe(async (block) => {
-			console.log(block.number);
+			console.log('enter subscribe');
+			console.log('block in main ', block.number);
 			console.log('Job is close to be off cooldown');
 			const currentNonce = await provider.getTransactionCount(signer.address);
 			// stop if tx in progress...
@@ -71,9 +71,6 @@ export async function runBasicJob(): Promise<void> {
 				1,
 				[200]
 			);
-
-			console.log({ tx });
-			console.log({ formattedBundles });
 
 			console.log('SENDING TX...');
 
@@ -127,10 +124,7 @@ export async function runComplexJob(): Promise<void> {
 
 	console.log('started cooldown observable');
 	timer(time)
-		.pipe(
-			mergeMap(async () => await getNewBlocks(provider)),
-			mergeMap((x) => x)
-		)
+		.pipe(mergeMap(() => getNewBlocks(provider)))
 		.subscribe(async (block) => {
 			counter++;
 			console.log('Job is close to be off cooldown');
