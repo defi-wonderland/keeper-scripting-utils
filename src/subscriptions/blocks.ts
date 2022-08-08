@@ -1,23 +1,22 @@
 import { emitWhenCloseToCooldown } from './cooldown';
 import { Block } from '@ethersproject/abstract-provider';
 import { BigNumber, providers } from 'ethers';
-import { from, merge, mergeMap, Observable, share, Subject } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { from, fromEvent, merge, mergeMap, Observable } from 'rxjs';
+import { filter, shareReplay, tap } from 'rxjs/operators';
 
 //TODO: Add detailed documentation
 export function getNewBlocks(provider: providers.BaseProvider): Observable<Block> {
 	console.log('start get new blocks');
-	return merge(from(provider.getBlock('latest')), blockListener(provider));
+	return merge(from(provider.getBlock('latest')), blockListener(provider)).pipe(shareReplay(1));
 }
 
 function blockListener(provider: providers.BaseProvider): Observable<Block> {
-	const blockSubject$ = new Subject<Block>();
-	provider.on('block', async (blockNumber) => {
-		console.log('second ', blockNumber);
-		const block = await provider.getBlock(blockNumber);
-		blockSubject$.next(block);
-	});
-	return blockSubject$.pipe(share());
+	const onBlock$ = fromEvent(provider, 'block') as Observable<number>;
+
+	return onBlock$.pipe(
+		tap((block) => console.log('second', block)),
+		mergeMap((block) => provider.getBlock(block))
+	);
 }
 
 export function emitWhenCloseToBlock(

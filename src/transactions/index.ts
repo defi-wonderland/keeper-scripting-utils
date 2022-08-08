@@ -78,13 +78,11 @@ export async function sendAndRetryUntilNotWorkable(
 	bundles: BundleBurstGroup[],
 	newBurstSize: number,
 	flashbots: Flashbots,
-	job: Contract,
-	functionName: string,
-	functionArgs: any[]
+	isWorkableCheck: () => Promise<boolean>
 ): Promise<boolean> {
 	const firstBundleIncluded = await sendBundlesToFlashbots(bundles, flashbots);
 	if (!firstBundleIncluded) {
-		const jobIsStillWorkable = await job.functions[functionName](...functionArgs);
+		const jobIsStillWorkable = await isWorkableCheck();
 		if (!jobIsStillWorkable) {
 			console.log('Job is not workable');
 			return false;
@@ -97,17 +95,7 @@ export async function sendAndRetryUntilNotWorkable(
 			bundles.length,
 			newBurstSize
 		);
-		return sendAndRetryUntilNotWorkable(
-			tx,
-			provider,
-			priorityFee,
-			retryBundle,
-			newBurstSize,
-			flashbots,
-			job,
-			functionName,
-			functionArgs
-		);
+		return sendAndRetryUntilNotWorkable(tx, provider, priorityFee, retryBundle, newBurstSize, flashbots, isWorkableCheck);
 	}
 	return true;
 }

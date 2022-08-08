@@ -81,9 +81,7 @@ export async function runBasicJob(): Promise<void> {
 				formattedBundles,
 				3,
 				flashbots,
-				job,
-				'basicWorkable',
-				[]
+				async () => await job.basicWorkable()
 			);
 
 			console.log('===== Tx SUCCESS =====');

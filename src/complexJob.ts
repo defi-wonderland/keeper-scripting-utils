@@ -6,7 +6,7 @@ import { loadConfig } from './utils/config';
 import { getNodeUrlWss, getPrivateKey } from './utils/env';
 import { Logger } from './utils/logger';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
-import { mergeMap, take, timer } from 'rxjs';
+import { mergeMap, timer } from 'rxjs';
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -93,9 +93,7 @@ export async function runComplexJob(): Promise<void> {
 				formattedBundles,
 				3,
 				flashbots,
-				job,
-				'complexWorkable',
-				[trigger]
+				async () => await job.complexWorkable(trigger)
 			);
 
 			console.log('===== Tx SUCCESS =====');
