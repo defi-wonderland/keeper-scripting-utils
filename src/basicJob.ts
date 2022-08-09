@@ -57,7 +57,7 @@ export async function runBasicJob(): Promise<void> {
 			console.log('block in main ', block.number);
 			console.log('Job is close to be off cooldown');
 			const currentNonce = await provider.getTransactionCount(signer.address);
-			// stop if tx in progress...
+
 			const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots(
 				job,
 				'basicWork',
@@ -86,11 +86,7 @@ export async function runBasicJob(): Promise<void> {
 
 			console.log('===== Tx SUCCESS =====');
 
-			// on complex job run some extra needed checks like job.workable().
-
-			// ready to work:
 			stopBlocks(provider);
-			// send tx with flashbots
 			runBasicJob();
 		});
 }

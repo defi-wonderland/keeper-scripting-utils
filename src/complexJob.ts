@@ -59,7 +59,7 @@ export async function runComplexJob(): Promise<void> {
 				return;
 			}
 
-			const trigger = true; // counter > 2;
+			const trigger = true; // counter > 2;  // TODO REMOVE HARDCOD
 			const isWorkable = await job.complexWorkable(trigger);
 			if (!isWorkable) {
 				console.log('NOT WORKABLE: ', block.number);
@@ -68,7 +68,6 @@ export async function runComplexJob(): Promise<void> {
 
 			txInProgress = true;
 			const currentNonce = await provider.getTransactionCount(signer.address);
-			// stop if tx in progress...
 
 			const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots(
 				job,
@@ -98,11 +97,8 @@ export async function runComplexJob(): Promise<void> {
 
 			console.log('===== Tx SUCCESS =====');
 
-			// on complex job run some extra needed checks like job.workable().
 			txInProgress = false;
-			// ready to work:
 			stopBlocks(provider);
-			// send tx with flashbots
 			runComplexJob();
 		});
 }
