@@ -1,6 +1,6 @@
 import { Block, TransactionResponse, TransactionRequest } from '@ethersproject/abstract-provider';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
-import { BigNumber, Contract, providers, Signer, utils } from 'ethers';
+import { BigNumber, Contract, providers, Signer, utils, Wallet } from 'ethers';
 import { Flashbots } from 'src/flashbots/flashbots';
 import { BundleBurstGroup, GasType2Parameters, PrepareFirstBundlesForFlashbotsReturnValue } from 'src/types';
 
@@ -43,7 +43,7 @@ export async function prepareFirstBundlesForFlashbots(
 
 	const targetBlock = block.number + futureBlocks;
 	const blocksAhead = futureBlocks + burstSize; // done
-	const bundles = createBundles(tx, burstSize, targetBlock);
+	const bundles = createBundles(tx, burstSize, targetBlock, functionArgs[0]); // TODO remove 3er paramenter. Its for loggin on dev phase
 	const formattedBundles = formatBundlesTxsToType2(bundles, block, priorityFee, blocksAhead);
 
 	// This should probably return the transaction aswell
@@ -78,7 +78,8 @@ export async function sendAndRetryUntilNotWorkable(
 	bundles: BundleBurstGroup[],
 	newBurstSize: number,
 	flashbots: Flashbots,
-	isWorkableCheck: () => Promise<boolean>
+	isWorkableCheck: () => Promise<boolean>,
+	signer: Wallet
 ): Promise<boolean> {
 	const firstBundleIncluded = await sendBundlesToFlashbots(bundles, flashbots);
 	if (!firstBundleIncluded) {
@@ -87,31 +88,39 @@ export async function sendAndRetryUntilNotWorkable(
 			console.log('Job is not workable');
 			return false;
 		}
+		// check using state
+		// strategiesStatus[strategy].includedIn return;
 		const retryBundle = await prepareFlashbotBundleForRetry(
 			tx,
 			provider,
 			bundles[0].targetBlock,
 			priorityFee,
 			bundles.length,
-			newBurstSize
+			newBurstSize,
+			signer,
+			bundles[0].id
 		);
-		return sendAndRetryUntilNotWorkable(tx, provider, priorityFee, retryBundle, newBurstSize, flashbots, isWorkableCheck);
+		return sendAndRetryUntilNotWorkable(tx, provider, priorityFee, retryBundle, newBurstSize, flashbots, isWorkableCheck, signer);
 	}
 	return true;
 }
 
+// TODO take off id argument from createBundle, both prepeare functions, sendRetry and remove from BundleBurstGroup type
 export async function prepareFlashbotBundleForRetry(
 	tx: TransactionRequest,
 	provider: providers.BaseProvider,
 	notIncludedBlock: number,
 	priorityFee: number,
 	previousBurstSize: number,
-	newBurstSize: number
+	newBurstSize: number,
+	signer: Wallet,
+	id?: string
 ): Promise<BundleBurstGroup[]> {
 	const firstBundleBlock = await provider.getBlock(notIncludedBlock);
 	const targetBlock = notIncludedBlock + previousBurstSize;
 	const blocksAhead = previousBurstSize + newBurstSize - 1;
-	const bundles = createBundles(tx, newBurstSize, targetBlock);
+	tx.nonce = await provider.getTransactionCount(signer.address);
+	const bundles = createBundles(tx, newBurstSize, targetBlock, id);
 
 	return formatBundlesTxsToType2(bundles, firstBundleBlock, priorityFee, blocksAhead);
 }
@@ -126,10 +135,16 @@ export async function sendBundlesToFlashbots(bundle: BundleBurstGroup[], flashbo
 	return included[0];
 }
 
-export function createBundles(unsignedTx: TransactionRequest, burstQuantity: number, targetBlock: number): BundleBurstGroup[] {
+export function createBundles(
+	unsignedTx: TransactionRequest,
+	burstQuantity: number,
+	targetBlock: number,
+	id?: string
+): BundleBurstGroup[] {
 	return new Array(burstQuantity).fill(null).map((_, index) => ({
 		targetBlock: targetBlock + index,
 		txs: [unsignedTx],
+		id,
 	}));
 }
 

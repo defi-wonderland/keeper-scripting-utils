@@ -92,7 +92,8 @@ export async function runComplexJob(): Promise<void> {
 				formattedBundles,
 				3,
 				flashbots,
-				async () => await job.complexWorkable(trigger)
+				() => job.complexWorkable(trigger),
+				signer
 			);
 
 			console.log('===== Tx SUCCESS =====');

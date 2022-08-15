@@ -13,10 +13,7 @@ export function getNewBlocks(provider: providers.BaseProvider): Observable<Block
 function blockListener(provider: providers.BaseProvider): Observable<Block> {
 	const onBlock$ = fromEvent(provider, 'block') as Observable<number>;
 
-	return onBlock$.pipe(
-		tap((block) => console.log('second', block)),
-		mergeMap((block) => provider.getBlock(block))
-	);
+	return onBlock$.pipe(mergeMap((block) => provider.getBlock(block)));
 }
 
 export function emitWhenCloseToBlock(

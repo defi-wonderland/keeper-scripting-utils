@@ -19,6 +19,7 @@ export interface GenericJSONValidator<T> {
 export interface BundleBurstGroup {
 	targetBlock: number;
 	txs: TransactionRequest[];
+	id?: string;
 }
 
 export interface GasType2Parameters {

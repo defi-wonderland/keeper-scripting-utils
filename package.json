@@ -21,6 +21,7 @@
   "scripts": {
     "start:basic": "ts-node src/basicJob.ts",
     "start:complex": "ts-node src/complexJob.ts",
+    "start:strategies": "ts-node src/strategiesJob.ts",
     "build": "tsc -p tsconfig.json",
     "prod": "node dist/tsc/src/main.js",
     "test": "tsc && TEST_MODE=true jest --verbose",

@@ -68,7 +68,7 @@ export async function runBasicJob(): Promise<void> {
 				chainId,
 				currentNonce,
 				2,
-				1,
+				2,
 				[200]
 			);
 
@@ -81,7 +81,8 @@ export async function runBasicJob(): Promise<void> {
 				formattedBundles,
 				3,
 				flashbots,
-				async () => await job.basicWorkable()
+				async () => await job.basicWorkable(),
+				signer
 			);
 
 			console.log('===== Tx SUCCESS =====');
