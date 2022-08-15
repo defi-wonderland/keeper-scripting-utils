@@ -156,27 +156,20 @@ export async function sendSingleTx(
 	priorityFee: number,
 	gasLimit: number,
 	chainId: number,
-	...functionArgs: any[]
-): Promise<boolean> {
+	functionArgs: any[]
+): Promise<providers.TransactionReceipt> {
 	const { priorityFee: priorityFeeToGwei, maxFeePerGas } = getGasType2Parameters(block, priorityFee);
 	const tx: TransactionResponse = await contract.connect(signer).functions[functionName](...functionArgs, {
 		maxFeePerGas,
-		priorityFee: priorityFeeToGwei,
+		maxPriorityFeePerGas: priorityFeeToGwei,
 		gasLimit,
 		type: 2,
-		chainId,
 	});
 
+	tx.chainId = chainId;
 	console.log(`Transaction submitted: https://etherscan.io/tx/${tx.hash}`);
 
-	try {
-		await tx.wait();
-		console.log('Transaction executed successfully.');
-		return true;
-	} catch (err) {
-		console.log(`Transaction failed. Reason: ${err.reason}`);
-		return false;
-	}
+	return await tx.wait();
 }
 
 export function getGasType2Parameters(block: Block, priorityFee: number): GasType2Parameters {
