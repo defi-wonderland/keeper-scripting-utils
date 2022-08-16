@@ -3,7 +3,7 @@ import { GasService } from './services/gas.service';
 import { getNewBlocks } from './subscriptions/blocks';
 import { sendTx } from './transactions';
 import { loadConfig } from './utils/config';
-import { getNodeUrl, getNodeUrlWss, getPrivateKey } from './utils/env';
+import { getNodeUrl, getPrivateKey } from './utils/env';
 import { Logger } from './utils/logger';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer, filter } from 'rxjs';

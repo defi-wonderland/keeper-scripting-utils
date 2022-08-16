@@ -1,4 +1,4 @@
-import { GasFees } from '../types';
+import { GasFees } from '@types';
 import axios from 'axios';
 
 export type Wei = string;

@@ -1,13 +1,12 @@
 import StrategiesJob from '../abi/StrategiesJob.json';
 import { Flashbots } from './flashbots/flashbots';
-import { getNewBlocks, stopBlocks } from './subscriptions/blocks';
+import { getNewBlocks } from './subscriptions/blocks';
 import { prepareFirstBundlesForFlashbots, sendAndRetryUntilNotWorkable } from './transactions';
 import { loadConfig } from './utils/config';
 import { getNodeUrlWss, getPrivateKey } from './utils/env';
 import { Logger } from './utils/logger';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer, filter } from 'rxjs';
-import { string } from 'yargs';
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -92,31 +91,31 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber, flashbots: Fla
 			// prepareFirstBundlesForFlashbots
 			strategyWorkInProgress[strategy] = true;
 			const currentNonce = await provider.getTransactionCount(signer.address);
-			const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots(
+			const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots({
 				job,
-				'work',
+				functionName: 'work',
 				signer,
 				block,
 				priorityFee,
 				gasLimit,
 				chainId,
-				currentNonce,
-				0, // future blocks
-				2, // bundle size
-				[strategy, trigger, 10]
-			);
+				nonce: currentNonce,
+				futureBlocks: 0, // future blocks
+				burstSize: 2, // bundle size
+				functionArgs: [strategy, trigger, 10],
+			});
 
 			// sendAndRetryUntilNotWorkable
-			const result = await sendAndRetryUntilNotWorkable(
+			const result = await sendAndRetryUntilNotWorkable({
 				tx,
 				provider,
 				priorityFee,
-				formattedBundles,
-				3, // new bundle size
+				signer,
+				bundles: formattedBundles,
+				newBurstSize: 3, // new bundle size
 				flashbots,
-				() => job.workable(strategy, trigger),
-				signer
-			);
+				isWorkableCheck: () => job.workable(strategy, trigger),
+			});
 			console.log('===== Tx SUCCESS ===== ', strategy);
 			// actualizar lastWorkAt a mano
 			lastWorkAt2[strategy] = await job.lastWorkAt(strategy);

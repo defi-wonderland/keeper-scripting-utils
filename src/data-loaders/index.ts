@@ -1,5 +1,5 @@
+import { GenericJSONValidator } from '@types';
 import fs from 'fs-extra';
-import { GenericJSONValidator } from 'src/types';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 

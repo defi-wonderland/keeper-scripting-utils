@@ -58,32 +58,32 @@ export async function runBasicJob(): Promise<void> {
 			console.log('Job is close to be off cooldown');
 			const currentNonce = await provider.getTransactionCount(signer.address);
 
-			const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots(
+			const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots({
 				job,
-				'basicWork',
+				functionName: 'basicWork',
 				signer,
 				block,
 				priorityFee,
 				gasLimit,
 				chainId,
-				currentNonce,
-				2,
-				2,
-				[200]
-			);
+				nonce: currentNonce,
+				futureBlocks: 2,
+				burstSize: 2,
+				functionArgs: [200],
+			});
 
 			console.log('SENDING TX...');
 
-			const result = await sendAndRetryUntilNotWorkable(
+			const result = await sendAndRetryUntilNotWorkable({
 				tx,
 				provider,
 				priorityFee,
-				formattedBundles,
-				3,
+				bundles: formattedBundles,
+				newBurstSize: 3,
 				flashbots,
-				async () => await job.basicWorkable(),
-				signer
-			);
+				signer,
+				isWorkableCheck: async () => await job.basicWorkable(),
+			});
 
 			console.log('===== Tx SUCCESS =====');
 

@@ -1,8 +1,22 @@
+import { Flashbots } from '../flashbots/flashbots';
 import { Block, TransactionResponse, TransactionRequest } from '@ethersproject/abstract-provider';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
-import { BigNumber, Contract, providers, Signer, utils, Wallet } from 'ethers';
-import { Flashbots } from 'src/flashbots/flashbots';
-import { BundleBurstGroup, GasType2Parameters, PrepareFirstBundlesForFlashbotsReturnValue } from 'src/types';
+import {
+	SendTxProps,
+	CreateBundlesProps,
+	FormatBundlesTxsToType2Props,
+	FormatTxsToType2NextBlockProps,
+	FormatTxsToType2Props,
+	GetGasType2ParametersForBundleProps,
+	PrepareFirstBundlesForFlashbotsProps,
+	PrepareFirstBundlesForFlashbotsReturnValue,
+	PrepareFlashbotBundleForRetryProps,
+	SendAndRetryUntilNotWorkableProps,
+	SendMainnetTxProps,
+	BundleBurstGroup,
+	GasType2Parameters,
+} from '@types';
+import { BigNumber, providers, utils } from 'ethers';
 
 /**
  * @notice Prepares the first set of flashbot bundles to be sent.
@@ -23,18 +37,10 @@ import { BundleBurstGroup, GasType2Parameters, PrepareFirstBundlesForFlashbotsRe
  */
 
 export async function prepareFirstBundlesForFlashbots(
-	job: Contract,
-	functionName: string,
-	signer: Signer,
-	block: Block,
-	priorityFee: number,
-	gasLimit: number,
-	chainId: number,
-	nonce: number,
-	futureBlocks: number,
-	burstSize: number,
-	functionArgs: any[]
+	props: PrepareFirstBundlesForFlashbotsProps
 ): Promise<PrepareFirstBundlesForFlashbotsReturnValue> {
+	const { block, burstSize, chainId, functionArgs, functionName, futureBlocks, gasLimit, job, nonce, signer, priorityFee } =
+		props;
 	const tx: TransactionRequest = await job.connect(signer).populateTransaction[functionName](...functionArgs, {
 		gasLimit,
 	});
@@ -43,8 +49,8 @@ export async function prepareFirstBundlesForFlashbots(
 
 	const targetBlock = block.number + futureBlocks;
 	const blocksAhead = futureBlocks + burstSize; // done
-	const bundles = createBundles(tx, burstSize, targetBlock, functionArgs[0]); // TODO remove 3er paramenter. Its for loggin on dev phase
-	const formattedBundles = formatBundlesTxsToType2(bundles, block, priorityFee, blocksAhead);
+	const bundles = createBundles({ unsignedTx: tx, burstSize: burstSize, targetBlock, id: functionArgs[0] }); // TODO remove 3er paramenter. Its for loggin on dev phase
+	const formattedBundles = formatBundlesTxsToType2({ bundlesTxs: bundles, block, priorityFee, blocksAhead });
 
 	// This should probably return the transaction aswell
 	return {
@@ -71,16 +77,8 @@ export async function prepareFirstBundlesForFlashbots(
  * @returns A boolean to know whether the bundle was included or not
  */
 
-export async function sendAndRetryUntilNotWorkable(
-	tx: TransactionRequest,
-	provider: providers.BaseProvider,
-	priorityFee: number,
-	bundles: BundleBurstGroup[],
-	newBurstSize: number,
-	flashbots: Flashbots,
-	isWorkableCheck: () => Promise<boolean>,
-	signer: Wallet
-): Promise<boolean> {
+export async function sendAndRetryUntilNotWorkable(props: SendAndRetryUntilNotWorkableProps): Promise<boolean> {
+	const { bundles, flashbots, isWorkableCheck, newBurstSize, priorityFee, provider, signer, tx } = props;
 	const firstBundleIncluded = await sendBundlesToFlashbots(bundles, flashbots);
 	if (!firstBundleIncluded) {
 		const jobIsStillWorkable = await isWorkableCheck();
@@ -90,39 +88,31 @@ export async function sendAndRetryUntilNotWorkable(
 		}
 		// check using state
 		// strategiesStatus[strategy].includedIn return;
-		const retryBundle = await prepareFlashbotBundleForRetry(
+		const retryBundle = await prepareFlashbotBundleForRetry({
 			tx,
 			provider,
-			bundles[0].targetBlock,
+			notIncludedBlock: bundles[0].targetBlock,
 			priorityFee,
-			bundles.length,
+			previousBurstSize: bundles.length,
 			newBurstSize,
 			signer,
-			bundles[0].id
-		);
-		return sendAndRetryUntilNotWorkable(tx, provider, priorityFee, retryBundle, newBurstSize, flashbots, isWorkableCheck, signer);
+			id: bundles[0].id,
+		});
+		return sendAndRetryUntilNotWorkable({ ...props, bundles: retryBundle });
 	}
 	return true;
 }
 
 // TODO take off id argument from createBundle, both prepeare functions, sendRetry and remove from BundleBurstGroup type
-export async function prepareFlashbotBundleForRetry(
-	tx: TransactionRequest,
-	provider: providers.BaseProvider,
-	notIncludedBlock: number,
-	priorityFee: number,
-	previousBurstSize: number,
-	newBurstSize: number,
-	signer: Wallet,
-	id?: string
-): Promise<BundleBurstGroup[]> {
+export async function prepareFlashbotBundleForRetry(props: PrepareFlashbotBundleForRetryProps): Promise<BundleBurstGroup[]> {
+	const { tx, provider, signer, priorityFee, notIncludedBlock, previousBurstSize, newBurstSize, id } = props;
 	const firstBundleBlock = await provider.getBlock(notIncludedBlock);
 	const targetBlock = notIncludedBlock + previousBurstSize;
 	const blocksAhead = previousBurstSize + newBurstSize - 1;
 	tx.nonce = await provider.getTransactionCount(signer.address);
-	const bundles = createBundles(tx, newBurstSize, targetBlock, id);
+	const bundles = createBundles({ unsignedTx: tx, burstSize: newBurstSize, targetBlock, id });
 
-	return formatBundlesTxsToType2(bundles, firstBundleBlock, priorityFee, blocksAhead);
+	return formatBundlesTxsToType2({ bundlesTxs: bundles, block: firstBundleBlock, priorityFee, blocksAhead });
 }
 
 export async function sendBundlesToFlashbots(bundle: BundleBurstGroup[], flashbots: Flashbots): Promise<boolean> {
@@ -135,29 +125,17 @@ export async function sendBundlesToFlashbots(bundle: BundleBurstGroup[], flashbo
 	return included[0];
 }
 
-export function createBundles(
-	unsignedTx: TransactionRequest,
-	burstQuantity: number,
-	targetBlock: number,
-	id?: string
-): BundleBurstGroup[] {
-	return new Array(burstQuantity).fill(null).map((_, index) => ({
+export function createBundles(props: CreateBundlesProps): BundleBurstGroup[] {
+	const { targetBlock, burstSize, unsignedTx, id } = props;
+	return new Array(burstSize).fill(null).map((_, index) => ({
 		targetBlock: targetBlock + index,
 		txs: [unsignedTx],
 		id,
 	}));
 }
 
-export async function sendMainnetTx(
-	contract: Contract,
-	functionName: string,
-	signer: Signer,
-	block: Block,
-	priorityFee: number,
-	gasLimit: number,
-	chainId: number,
-	functionArgs: any[]
-): Promise<providers.TransactionReceipt> {
+export async function sendMainnetTx(props: SendMainnetTxProps): Promise<providers.TransactionReceipt> {
+	const { contract, signer, block, chainId, gasLimit, priorityFee, functionName, functionArgs } = props;
 	const { priorityFee: priorityFeeToGwei, maxFeePerGas } = getGasType2Parameters(block, priorityFee);
 	const tx: TransactionResponse = await contract.connect(signer).functions[functionName](...functionArgs, {
 		maxFeePerGas,
@@ -172,17 +150,6 @@ export async function sendMainnetTx(
 	return await tx.wait();
 }
 
-interface SendTxProps {
-	contract: Contract;
-	functionName: string;
-	signer: Signer;
-	maxFeePerGas: number;
-	maxPriorityFeePerGas: number;
-	gasLimit: number;
-	chainId: number;
-	functionArgs: any[];
-	explorerUrl?: string;
-}
 export async function sendTx(props: SendTxProps): Promise<providers.TransactionReceipt> {
 	const { chainId, contract, functionArgs, functionName, gasLimit, maxFeePerGas, maxPriorityFeePerGas, signer, explorerUrl } =
 		props;
@@ -215,7 +182,8 @@ export function getGasType2Parameters(block: Block, priorityFee: number): GasTyp
 	};
 }
 
-export function getGasType2ParametersForBundle(block: Block, priorityFee: number, blocksAhead: number): GasType2Parameters {
+export function getGasType2ParametersForBundle(props: GetGasType2ParametersForBundleProps): GasType2Parameters {
+	const { block, blocksAhead, priorityFee } = props;
 	const maxBlockBaseFee = FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas!, blocksAhead);
 	const priorityFeeToGwei = toGwei(priorityFee);
 	const maxFeePerGas = priorityFeeToGwei.add(maxBlockBaseFee);
@@ -225,11 +193,8 @@ export function getGasType2ParametersForBundle(block: Block, priorityFee: number
 	};
 }
 
-export function formatTxsToType2NextBlock(
-	unsignedTxs: TransactionRequest[],
-	block: Block,
-	priorityFee: number
-): TransactionRequest[] {
+export function formatTxsToType2NextBlock(props: FormatTxsToType2NextBlockProps): TransactionRequest[] {
+	const { block, priorityFee, unsignedTxs } = props;
 	const { priorityFee: priorityFeeToGwei, maxFeePerGas } = getGasType2Parameters(block, priorityFee);
 	return unsignedTxs.map((tx) => ({
 		...tx,
@@ -239,13 +204,9 @@ export function formatTxsToType2NextBlock(
 	}));
 }
 
-export function formatTxsToType2(
-	unsignedTxs: TransactionRequest[],
-	block: Block,
-	priorityFee: number,
-	blocksAhead: number
-): TransactionRequest[] {
-	const { priorityFee: priorityFeeToGwei, maxFeePerGas } = getGasType2ParametersForBundle(block, priorityFee, blocksAhead);
+export function formatTxsToType2(props: FormatTxsToType2Props): TransactionRequest[] {
+	const { block, blocksAhead, priorityFee, unsignedTxs } = props;
+	const { priorityFee: priorityFeeToGwei, maxFeePerGas } = getGasType2ParametersForBundle({ block, priorityFee, blocksAhead });
 	return unsignedTxs.map((tx) => ({
 		...tx,
 		type: 2,
@@ -254,13 +215,9 @@ export function formatTxsToType2(
 	}));
 }
 
-export function formatBundlesTxsToType2(
-	bundlesTxs: BundleBurstGroup[],
-	block: Block,
-	priorityFee: number,
-	blocksAhead: number
-): BundleBurstGroup[] {
-	const { priorityFee: priorityFeeToGwei, maxFeePerGas } = getGasType2ParametersForBundle(block, priorityFee, blocksAhead);
+export function formatBundlesTxsToType2(props: FormatBundlesTxsToType2Props): BundleBurstGroup[] {
+	const { block, blocksAhead, bundlesTxs, priorityFee } = props;
+	const { priorityFee: priorityFeeToGwei, maxFeePerGas } = getGasType2ParametersForBundle({ block, priorityFee, blocksAhead });
 	return bundlesTxs.map((bundle) => ({
 		...bundle,
 		txs: bundle.txs.map((tx) => ({

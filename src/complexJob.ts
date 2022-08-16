@@ -69,32 +69,32 @@ export async function runComplexJob(): Promise<void> {
 			txInProgress = true;
 			const currentNonce = await provider.getTransactionCount(signer.address);
 
-			const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots(
+			const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots({
 				job,
-				'complexWork',
+				functionName: 'complexWork',
 				signer,
 				block,
 				priorityFee,
 				gasLimit,
 				chainId,
-				currentNonce,
-				0,
-				2,
-				[trigger, 2]
-			);
+				nonce: currentNonce,
+				futureBlocks: 0,
+				burstSize: 2,
+				functionArgs: [trigger, 2],
+			});
 
 			console.log('SENDING TX...');
 
-			const result = await sendAndRetryUntilNotWorkable(
+			const result = await sendAndRetryUntilNotWorkable({
 				tx,
 				provider,
 				priorityFee,
-				formattedBundles,
-				3,
+				bundles: formattedBundles,
+				newBurstSize: 3,
 				flashbots,
-				() => job.complexWorkable(trigger),
-				signer
-			);
+				signer,
+				isWorkableCheck: () => job.complexWorkable(trigger),
+			});
 
 			console.log('===== Tx SUCCESS =====');
 
