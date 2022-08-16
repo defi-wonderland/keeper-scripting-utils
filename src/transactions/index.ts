@@ -148,7 +148,7 @@ export function createBundles(
 	}));
 }
 
-export async function sendSingleTx(
+export async function sendMainnetTx(
 	contract: Contract,
 	functionName: string,
 	signer: Signer,
@@ -168,6 +168,39 @@ export async function sendSingleTx(
 
 	tx.chainId = chainId;
 	console.log(`Transaction submitted: https://etherscan.io/tx/${tx.hash}`);
+
+	return await tx.wait();
+}
+
+interface SendTxProps {
+	contract: Contract;
+	functionName: string;
+	signer: Signer;
+	maxFeePerGas: number;
+	maxPriorityFeePerGas: number;
+	gasLimit: number;
+	chainId: number;
+	functionArgs: any[];
+	explorerUrl?: string;
+}
+export async function sendTx(props: SendTxProps): Promise<providers.TransactionReceipt> {
+	const { chainId, contract, functionArgs, functionName, gasLimit, maxFeePerGas, maxPriorityFeePerGas, signer, explorerUrl } =
+		props;
+	const maxFeePerGasGwei = toGwei(Math.ceil(maxFeePerGas) + 10); // TODO CHECK
+	const maxPriorityFeePerGasGwei = toGwei(Math.ceil(maxPriorityFeePerGas) + 10); // TODO CHECK
+	const tx: TransactionResponse = await contract.connect(signer).functions[functionName](...functionArgs, {
+		maxFeePerGas: maxFeePerGasGwei,
+		maxPriorityFeePerGas: maxPriorityFeePerGasGwei,
+		gasLimit,
+		type: 2,
+	});
+
+	tx.chainId = chainId;
+	if (explorerUrl) {
+		console.log(`Transaction submitted: ${explorerUrl}/tx/${tx.hash}`);
+	} else {
+		console.log(`Transaction submitted: ${tx.hash}`);
+	}
 
 	return await tx.wait();
 }

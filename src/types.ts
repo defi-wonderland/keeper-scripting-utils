@@ -31,3 +31,9 @@ export interface PrepareFirstBundlesForFlashbotsReturnValue {
 	tx: TransactionRequest;
 	formattedBundles: BundleBurstGroup[];
 }
+
+export interface GasFees {
+	gasPrice?: number;
+	maxFeePerGas: number;
+	maxPriorityFeePerGas: number;
+}

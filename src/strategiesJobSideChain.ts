@@ -1,8 +1,9 @@
 import StrategiesJob from '../abi/StrategiesJob.json';
+import { GasService } from './services/gas.service';
 import { getNewBlocks } from './subscriptions/blocks';
-import { sendSingleTx } from './transactions';
+import { sendTx } from './transactions';
 import { loadConfig } from './utils/config';
-import { getNodeUrlWss, getPrivateKey } from './utils/env';
+import { getNodeUrl, getNodeUrlWss, getPrivateKey } from './utils/env';
 import { Logger } from './utils/logger';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer, filter } from 'rxjs';
@@ -10,13 +11,16 @@ import { mergeMap, timer, filter } from 'rxjs';
 const dotenv = require('dotenv');
 dotenv.config();
 
-const network = 'goerli';
-const chainId = 5;
-const nodeUrl = getNodeUrlWss(network);
-const provider = new providers.WebSocketProvider(nodeUrl);
-const JOB_ADDRESS = '0xbA3ae0D23D3CFb74d829615b304F02C366e75d5E';
+const network = 'polygon';
+const chainId = 137;
+const nodeUrl = getNodeUrl(network);
+const provider = new providers.JsonRpcProvider(nodeUrl);
+// const nodeUrl = getNodeUrlWss(network);
+// const provider = new providers.WebSocketProvider(nodeUrl);
+const JOB_ADDRESS = '0x647Fdb71eEA4f9A94E14964C40027718C931bEe5';
 const PK = getPrivateKey(network);
 const BLOCKS_TO_WAIT = 2;
+const gasService = new GasService();
 
 const signer = new Wallet(PK, provider);
 const job = new Contract(JOB_ADDRESS, StrategiesJob, signer);
@@ -90,7 +94,21 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 				if (txInProgress) return;
 				txInProgress = true;
 				readyStrategies.push(strategy);
-				await sendSingleTx(job, 'work', signer, block, priorityFee, gasLimit, chainId, [strategy, trigger, 10]);
+
+				const gasFees = await gasService.getGasFees(chainId);
+				const explorerUrl = 'https://polygonscan.com';
+				await sendTx({
+					contract: job,
+					functionName: 'work',
+					signer,
+					maxFeePerGas: gasFees.maxFeePerGas,
+					maxPriorityFeePerGas: gasFees.maxPriorityFeePerGas,
+					gasLimit,
+					chainId,
+					functionArgs: [strategy, trigger, 10],
+					explorerUrl,
+				});
+
 				console.log('===== Tx SUCCESS ===== ', strategy);
 				lastWorkAt2[strategy] = await job.lastWorkAt(strategy);
 				strategyWorkInQueue[strategy] = false;
@@ -99,7 +117,7 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 				txInProgress = false;
 			} catch (error) {
 				console.log('===== Tx FAILED ===== ', strategy);
-				console.log(`Transaction failed. Reason: ${error.reason}`);
+				console.log(`Transaction failed. Reason: ${error.message}`);
 			}
 		});
 }
