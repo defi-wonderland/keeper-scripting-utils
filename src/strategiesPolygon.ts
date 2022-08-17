@@ -5,7 +5,7 @@ import { sendTx } from './transactions';
 import { loadConfig } from './utils/config';
 import { getNodeUrl, getPrivateKey } from './utils/env';
 import { Logger } from './utils/logger';
-import { providers, Wallet, Contract, BigNumber } from 'ethers';
+import { providers, Wallet, Contract, BigNumber, ethers } from 'ethers';
 import { mergeMap, timer, filter } from 'rxjs';
 
 const dotenv = require('dotenv');
@@ -24,7 +24,7 @@ const gasService = new GasService();
 
 const signer = new Wallet(PK, provider);
 const job = new Contract(JOB_ADDRESS, StrategiesJob, signer);
-const lastWorkAt2: Record<string, BigNumber> = {};
+const lastWorkAt: Record<string, BigNumber> = {};
 const strategyWorkInQueue: Record<string, boolean> = {};
 const targetBlocks: Record<string, number> = {};
 
@@ -32,26 +32,31 @@ const readyStrategies: string[] = [];
 let txInProgress = false;
 
 export async function runStrategiesJob(): Promise<void> {
-	const [strategies, cooldown2]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
-	// fetch 20 strats
-	// split in 4 forts
+	const [strategies, cooldown]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
 
-	// INSIDE FORK
+	const maxStrategiesPerBatch = 5;
+	const batchesToCreate = Math.ceil(strategies.length / maxStrategiesPerBatch);
 
-	const allLastWorksAt: BigNumber[] = await Promise.all(strategies.map((strategy) => job.lastWorkAt(strategy)));
-	strategies.forEach((strategy, i) => {
-		lastWorkAt2[strategy] = allLastWorksAt[i];
-	});
+	for (let index = 0; index < batchesToCreate; index++) {
+		const start = index * maxStrategiesPerBatch;
+		const batch = strategies.slice(start, start + maxStrategiesPerBatch);
+		console.log('Fetching batch number:', index + 1);
 
-	strategies.slice(0, 3).forEach((strategy) => {
-		tryToWorkStrategy(strategy, cooldown2);
+		const lastWorksAt: BigNumber[] = await Promise.all(batch.map((strategy) => job.lastWorkAt(strategy)));
+		batch.forEach((strategy, i) => {
+			lastWorkAt[strategy] = lastWorksAt[i];
+		});
+	}
+
+	strategies.forEach((strategy) => {
+		tryToWorkStrategy(strategy, cooldown);
 	});
 }
 
 function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 	console.log('Start Working on strategy: ', strategy);
 
-	const readyTime = lastWorkAt2[strategy].add(cooldown);
+	const readyTime = lastWorkAt[strategy].add(cooldown);
 	const notificationTime = readyTime;
 	const time = notificationTime.mul(1000).sub(Date.now()).toNumber();
 	const gasLimit = 10_000_000; // TODO DEHARDCODE
@@ -60,10 +65,11 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 		.pipe(
 			mergeMap(() => getNewBlocks(provider)),
 			filter(() => {
-				return lastWorkAt2[strategy].add(cooldown).lt(Date.now());
+				return lastWorkAt[strategy].add(cooldown).lt(Date.now());
 			})
 		)
 		.subscribe(async (block) => {
+			if (txInProgress) return;
 			console.log('block: ', block.number);
 
 			console.log('Strategy cooldown completed: ', strategy);
@@ -74,11 +80,17 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 			}
 
 			const trigger = true;
-			const isWorkable = await job.workable(strategy, trigger);
+			let isWorkable = false;
+			try {
+				isWorkable = await job.workable(strategy, trigger);
+			} catch (error) {
+				console.log('message: ', error.message);
+				console.log({ strategy });
+			}
 			if (!isWorkable) {
 				console.log('NOT WORKABLE: ', block.number, ' strategy: ', strategy);
 				removeElement(readyStrategies, strategy);
-				lastWorkAt2[strategy] = await job.lastWorkAt(strategy);
+				lastWorkAt[strategy] = await job.lastWorkAt(strategy);
 				strategyWorkInQueue[strategy] = false;
 				targetBlocks[strategy] = 0;
 				return;
@@ -108,7 +120,7 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 				});
 
 				console.log('===== Tx SUCCESS ===== ', strategy);
-				lastWorkAt2[strategy] = await job.lastWorkAt(strategy);
+				lastWorkAt[strategy] = await job.lastWorkAt(strategy);
 				strategyWorkInQueue[strategy] = false;
 				targetBlocks[strategy] = 0;
 				removeElement(readyStrategies, strategy);
