@@ -20,8 +20,8 @@ const PK = getPrivateKey(network);
 const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
 const FLASHBOTS_RPC = 'https://relay-goerli.flashbots.net';
 
-const signer = new Wallet(PK);
-const job = new Contract(JOB_ADDRESS, BasicJob, provider);
+const signer = new Wallet(PK, provider);
+const job = new Contract(JOB_ADDRESS, BasicJob, signer);
 
 export async function runBasicJob(): Promise<void> {
 	const winston = Logger.getServiceLogger('test');
@@ -61,7 +61,6 @@ export async function runBasicJob(): Promise<void> {
 			const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots({
 				job,
 				functionName: 'basicWork',
-				signer,
 				block,
 				priorityFee,
 				gasLimit,

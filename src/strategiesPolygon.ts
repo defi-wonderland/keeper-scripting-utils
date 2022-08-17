@@ -54,7 +54,6 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 	const readyTime = lastWorkAt2[strategy].add(cooldown);
 	const notificationTime = readyTime;
 	const time = notificationTime.mul(1000).sub(Date.now()).toNumber();
-	const priorityFee = 10; // TODO DEHARDCODE
 	const gasLimit = 10_000_000; // TODO DEHARDCODE
 
 	timer(time)
@@ -100,7 +99,6 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 				await sendTx({
 					contract: job,
 					functionName: 'work',
-					signer,
 					maxFeePerGas: gasFees.maxFeePerGas,
 					maxPriorityFeePerGas: gasFees.maxPriorityFeePerGas,
 					gasLimit,

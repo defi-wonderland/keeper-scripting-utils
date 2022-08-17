@@ -15,6 +15,7 @@ import {
 	SendMainnetTxProps,
 	BundleBurstGroup,
 	GasType2Parameters,
+	SendLegacyTransactionProps,
 } from '@types';
 import { BigNumber, providers, utils } from 'ethers';
 
@@ -39,9 +40,8 @@ import { BigNumber, providers, utils } from 'ethers';
 export async function prepareFirstBundlesForFlashbots(
 	props: PrepareFirstBundlesForFlashbotsProps
 ): Promise<PrepareFirstBundlesForFlashbotsReturnValue> {
-	const { block, burstSize, chainId, functionArgs, functionName, futureBlocks, gasLimit, job, nonce, signer, priorityFee } =
-		props;
-	const tx: TransactionRequest = await job.connect(signer).populateTransaction[functionName](...functionArgs, {
+	const { block, burstSize, chainId, functionArgs, functionName, futureBlocks, gasLimit, job, nonce, priorityFee } = props;
+	const tx: TransactionRequest = await job.populateTransaction[functionName](...functionArgs, {
 		gasLimit,
 	});
 	tx.chainId = chainId;
@@ -135,9 +135,9 @@ export function createBundles(props: CreateBundlesProps): BundleBurstGroup[] {
 }
 
 export async function sendMainnetTx(props: SendMainnetTxProps): Promise<providers.TransactionReceipt> {
-	const { contract, signer, block, chainId, gasLimit, priorityFee, functionName, functionArgs } = props;
+	const { contract, block, chainId, gasLimit, priorityFee, functionName, functionArgs } = props;
 	const { priorityFee: priorityFeeToGwei, maxFeePerGas } = getGasType2Parameters(block, priorityFee);
-	const tx: TransactionResponse = await contract.connect(signer).functions[functionName](...functionArgs, {
+	const tx: TransactionResponse = await contract.functions[functionName](...functionArgs, {
 		maxFeePerGas,
 		maxPriorityFeePerGas: priorityFeeToGwei,
 		gasLimit,
@@ -151,11 +151,10 @@ export async function sendMainnetTx(props: SendMainnetTxProps): Promise<provider
 }
 
 export async function sendTx(props: SendTxProps): Promise<providers.TransactionReceipt> {
-	const { chainId, contract, functionArgs, functionName, gasLimit, maxFeePerGas, maxPriorityFeePerGas, signer, explorerUrl } =
-		props;
+	const { chainId, contract, functionArgs, functionName, gasLimit, maxFeePerGas, maxPriorityFeePerGas, explorerUrl } = props;
 	const maxFeePerGasGwei = toGwei(Math.ceil(maxFeePerGas) + 10); // TODO CHECK
 	const maxPriorityFeePerGasGwei = toGwei(Math.ceil(maxPriorityFeePerGas) + 10); // TODO CHECK
-	const tx: TransactionResponse = await contract.connect(signer).functions[functionName](...functionArgs, {
+	const tx: TransactionResponse = await contract.functions[functionName](...functionArgs, {
 		maxFeePerGas: maxFeePerGasGwei,
 		maxPriorityFeePerGas: maxPriorityFeePerGasGwei,
 		gasLimit,
@@ -163,6 +162,21 @@ export async function sendTx(props: SendTxProps): Promise<providers.TransactionR
 	});
 
 	tx.chainId = chainId;
+	if (explorerUrl) {
+		console.log(`Transaction submitted: ${explorerUrl}/tx/${tx.hash}`);
+	} else {
+		console.log(`Transaction submitted: ${tx.hash}`);
+	}
+
+	return await tx.wait();
+}
+
+export async function sendLegacyTransaction(props: SendLegacyTransactionProps): Promise<providers.TransactionReceipt> {
+	const { chainId, workFunction, explorerUrl } = props;
+	const tx: TransactionResponse = await workFunction();
+
+	tx.chainId = chainId;
+
 	if (explorerUrl) {
 		console.log(`Transaction submitted: ${explorerUrl}/tx/${tx.hash}`);
 	} else {

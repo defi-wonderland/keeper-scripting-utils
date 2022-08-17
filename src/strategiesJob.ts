@@ -20,8 +20,8 @@ const PK = getPrivateKey(network);
 const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
 const FLASHBOTS_RPC = 'https://relay-goerli.flashbots.net';
 
-const signer = new Wallet(PK);
-const job = new Contract(JOB_ADDRESS, StrategiesJob, provider);
+const signer = new Wallet(PK, provider);
+const job = new Contract(JOB_ADDRESS, StrategiesJob, signer);
 const lastWorkAt2: Record<string, BigNumber> = {};
 const strategyWorkInProgress: Record<string, boolean> = {};
 
@@ -94,7 +94,6 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber, flashbots: Fla
 			const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots({
 				job,
 				functionName: 'work',
-				signer,
 				block,
 				priorityFee,
 				gasLimit,

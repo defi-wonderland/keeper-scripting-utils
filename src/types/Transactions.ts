@@ -1,12 +1,11 @@
 import { Flashbots } from '../flashbots/flashbots';
-import { TransactionRequest, Block } from '@ethersproject/abstract-provider';
+import { TransactionRequest, TransactionResponse, Block } from '@ethersproject/abstract-provider';
 import { BundleBurstGroup } from '@types';
 import { Contract, Signer, providers, Wallet } from 'ethers';
 
 export interface PrepareFirstBundlesForFlashbotsProps {
 	job: Contract;
 	functionName: string;
-	signer: Signer;
 	block: Block;
 	priorityFee: number;
 	gasLimit: number;
@@ -54,7 +53,6 @@ export interface CreateBundlesProps {
 export interface SendMainnetTxProps {
 	contract: Contract;
 	functionName: string;
-	signer: Signer;
 	block: Block;
 	priorityFee: number;
 	gasLimit: number;
@@ -65,7 +63,6 @@ export interface SendMainnetTxProps {
 export interface SendTxProps {
 	contract: Contract;
 	functionName: string;
-	signer: Signer;
 	maxFeePerGas: number;
 	maxPriorityFeePerGas: number;
 	gasLimit: number;
@@ -94,4 +91,10 @@ export interface FormatTxsBase {
 	block: Block;
 	priorityFee: number;
 	blocksAhead: number;
+}
+
+export interface SendLegacyTransactionProps {
+	chainId: number;
+	workFunction: () => Promise<TransactionResponse>;
+	explorerUrl?: string;
 }
