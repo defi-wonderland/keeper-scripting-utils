@@ -2,7 +2,7 @@ import { emitWhenCloseToCooldown } from './cooldown';
 import { Block } from '@ethersproject/abstract-provider';
 import { BigNumber, providers } from 'ethers';
 import { from, fromEvent, merge, mergeMap, Observable } from 'rxjs';
-import { filter, shareReplay, tap } from 'rxjs/operators';
+import { filter, shareReplay } from 'rxjs/operators';
 
 //TODO: Add detailed documentation
 export function getNewBlocks(provider: providers.BaseProvider): Observable<Block> {

@@ -2,9 +2,7 @@ import StrategiesJob from '../abi/StrategiesJob.json';
 import { Flashbots } from './flashbots/flashbots';
 import { getNewBlocks } from './subscriptions/blocks';
 import { prepareFirstBundlesForFlashbots, sendAndRetryUntilNotWorkable } from './transactions';
-import { loadConfig } from './utils/config';
-import { getNodeUrlWss, getPrivateKey } from './utils/env';
-import { Logger } from './utils/logger';
+import { Logger, getNodeUrlWss, getPrivateKey, loadConfig } from './utils';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer, filter } from 'rxjs';
 

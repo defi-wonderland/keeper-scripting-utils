@@ -1,9 +1,7 @@
 import StrategiesJob from '../abi/StrategiesJob.json';
 import { getNewBlocks } from './subscriptions/blocks';
 import { sendLegacyTransaction } from './transactions';
-import { loadConfig } from './utils/config';
-import { getNodeUrl, getPrivateKey } from './utils/env';
-import { Logger } from './utils/logger';
+import { Logger, getNodeUrl, getPrivateKey, loadConfig } from './utils';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer, filter } from 'rxjs';
 

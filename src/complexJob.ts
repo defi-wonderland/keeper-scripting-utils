@@ -2,9 +2,7 @@ import BasicJob from '../abi/BasicJob.json';
 import { Flashbots } from './flashbots/flashbots';
 import { getNewBlocks, stopBlocks } from './subscriptions/blocks';
 import { prepareFirstBundlesForFlashbots, sendAndRetryUntilNotWorkable } from './transactions';
-import { loadConfig } from './utils/config';
-import { getNodeUrlWss, getPrivateKey } from './utils/env';
-import { Logger } from './utils/logger';
+import { Logger, loadConfig, getNodeUrlWss, getPrivateKey } from './utils';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
 

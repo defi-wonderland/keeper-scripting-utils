@@ -15,7 +15,7 @@
     "outDir": "./dist/tsc/",
     "types": ["node", "jest"],
     "lib": ["ES6", "DOM"],
-    "baseUrl": "src",
+    "baseUrl": "./src",
     "paths": {
       "@types": ["types"],
       "@types/*": ["types/*"],
