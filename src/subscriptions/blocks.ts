@@ -14,14 +14,9 @@ export class BlockListener {
 		if (this.count++ === 0) {
 			console.log('%c ------ START BLOCK LISTENING -----', 'background: #56b576; color: white');
 			const onBlockNumber$ = fromEvent(this.provider, 'block') as Observable<number>;
-			const sub = onBlockNumber$
-				.pipe(
-					debounceTime(250),
-					mergeMap((blockNumber) => this.provider.getBlock(blockNumber))
-				)
-				.subscribe((block) => {
-					this.block$.next(block);
-				});
+			const sub = onBlockNumber$.pipe(mergeMap((blockNumber) => this.provider.getBlock(blockNumber))).subscribe((block) => {
+				this.block$.next(block);
+			});
 			this.subs.push(sub);
 		}
 		console.log({ count: this.count });

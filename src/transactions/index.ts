@@ -4,7 +4,6 @@ export * from './prepareFlashbotBundleForRetry';
 export * from './createBundles';
 export * from './sendMainnetTx';
 export * from './sendTx';
-export * from './sendLegacyTransaction';
 export * from './getGasType2Parameters';
 export * from './getGasType2ParametersForBundle';
 export * from './formatTxsToType2NextBlock';

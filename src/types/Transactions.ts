@@ -1,50 +1,50 @@
 import { Flashbots } from '../flashbots/flashbots';
 import { TransactionRequest, TransactionResponse, Block } from '@ethersproject/abstract-provider';
 import { BundleBurstGroup } from '@types';
-import { Contract, Signer, providers, Wallet } from 'ethers';
+import { Contract, Signer, providers, Wallet, Overrides } from 'ethers';
 
 export interface PrepareFirstBundlesForFlashbotsProps {
-	job: Contract;
+	contract: Contract;
 	functionName: string;
 	block: Block;
 	priorityFee: number;
-	gasLimit: number;
-	chainId: number;
-	nonce: number;
 	futureBlocks: number;
 	burstSize: number;
 	functionArgs: any[];
+	options?: Overrides;
 }
 
 export interface PrepareFirstBundlesForFlashbotsReturnValue {
-	tx: TransactionRequest;
+	txs: TransactionRequest[];
 	formattedBundles: BundleBurstGroup[];
 }
 
 export interface SendAndRetryUntilNotWorkableProps {
-	tx: TransactionRequest;
+	txs: TransactionRequest[];
 	provider: providers.BaseProvider;
 	priorityFee: number;
 	bundles: BundleBurstGroup[];
 	newBurstSize: number;
 	flashbots: Flashbots;
+	sendThroughStealthRelayer: boolean;
 	isWorkableCheck: () => Promise<boolean>;
 	signer: Wallet;
 }
 
 export interface PrepareFlashbotBundleForRetryProps {
-	tx: TransactionRequest;
+	txs: TransactionRequest[];
 	provider: providers.BaseProvider;
 	notIncludedBlock: number;
 	priorityFee: number;
 	previousBurstSize: number;
 	newBurstSize: number;
 	signer: Wallet;
+	sendThroughStealthRelayer: boolean;
 	id?: string;
 }
 
 export interface CreateBundlesProps {
-	unsignedTx: TransactionRequest;
+	unsignedTxs: TransactionRequest[];
 	burstSize: number;
 	targetBlock: number;
 	id?: string;
@@ -60,14 +60,16 @@ export interface SendMainnetTxProps {
 	functionArgs: any[];
 }
 
-export interface SendTxProps {
+export interface PopulateTransactionsProps {
 	contract: Contract;
 	functionName: string;
-	maxFeePerGas: number;
-	maxPriorityFeePerGas: number;
-	gasLimit: number;
-	chainId: number;
-	functionArgs: any[];
+	functionArgs: any[][];
+	burstSize: number;
+	options?: Overrides;
+}
+
+export interface SendTxProps {
+	contractCall: () => Promise<TransactionResponse>;
 	explorerUrl?: string;
 }
 
@@ -97,4 +99,5 @@ export interface SendLegacyTransactionProps {
 	chainId: number;
 	workFunction: () => Promise<TransactionResponse>;
 	explorerUrl?: string;
+	options?: Overrides;
 }

@@ -1,16 +1,15 @@
 import StrategiesJob from '../abi/StrategiesJob.json';
 import { BlockListener } from './subscriptions/blocks';
-import { sendTx } from './transactions';
-import { getPrivateKey, getNodeUrlWss } from './utils';
+import { getGasType2Parameters, sendTx } from './transactions';
+import { getPrivateKey, getNodeUrlWss, toGwei } from './utils';
 import { stopAndRestartWork } from './utils/stopAndRestartWork';
-import { providers, Wallet, Contract, BigNumber } from 'ethers';
+import { providers, Wallet, Contract, BigNumber, Overrides } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
 
 const dotenv = require('dotenv');
 dotenv.config();
 
 const network = 'goerli';
-const chainId = 5;
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
 const blockListener = new BlockListener(provider);
@@ -56,7 +55,6 @@ function tryToWorkStrategy(strategy: string) {
 	const readyTime = lastWorkAt[strategy].add(cooldown);
 	const notificationTime = readyTime;
 	const time = notificationTime.mul(1000).sub(Date.now()).toNumber();
-	const gasLimit = 10_000_000; // TODO DEHARDCODE
 
 	const sub = timer(time)
 		.pipe(mergeMap(() => blockListener.stream()))
@@ -99,15 +97,20 @@ function tryToWorkStrategy(strategy: string) {
 			try {
 				if (txInProgress) return;
 				txInProgress = true;
+				const usetSetPriorityFee = 10; // This could be dynamically calculated
+				const { maxFeePerGas, priorityFee } = getGasType2Parameters(block, usetSetPriorityFee);
+				const options: Overrides = {
+					gasLimit: 10_000_000,
+					maxFeePerGas,
+					maxPriorityFeePerGas: priorityFee,
+				};
+
 				const explorerUrl = 'https://goerli.etherscan.io';
 				await sendTx({
-					contract: job,
-					functionName: 'work',
-					maxPriorityFeePerGas: 10, // TODO hardcoded
-					maxFeePerGas: 20, // TODO hardcoded
-					gasLimit,
-					chainId,
-					functionArgs: [strategy, trigger, 10],
+					contractCall: () =>
+						job.work(strategy, trigger, 10, {
+							...options,
+						}),
 					explorerUrl,
 				});
 

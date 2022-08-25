@@ -20,27 +20,21 @@ import { SendAndRetryUntilNotWorkableProps } from '@types';
  */
 
 export async function sendAndRetryUntilNotWorkable(props: SendAndRetryUntilNotWorkableProps): Promise<boolean> {
-	const { bundles, flashbots, isWorkableCheck, newBurstSize, priorityFee, provider, signer, tx } = props;
+	const { bundles, flashbots, isWorkableCheck } = props;
+
 	const firstBundleIncluded = await sendBundlesToFlashbots(bundles, flashbots);
-	if (!firstBundleIncluded) {
-		const jobIsStillWorkable = await isWorkableCheck();
-		if (!jobIsStillWorkable) {
-			console.log('Job is not workable');
-			return false;
-		}
-		// check using state
-		// strategiesStatus[strategy].includedIn return;
-		const retryBundle = await prepareFlashbotBundleForRetry({
-			tx,
-			provider,
-			notIncludedBlock: bundles[0].targetBlock,
-			priorityFee,
-			previousBurstSize: bundles.length,
-			newBurstSize,
-			signer,
-			id: bundles[0].id,
-		});
-		return sendAndRetryUntilNotWorkable({ ...props, bundles: retryBundle });
+	if (firstBundleIncluded) return true;
+	const jobIsStillWorkable = await isWorkableCheck();
+	if (!jobIsStillWorkable) {
+		console.log('Job is not workable');
+		return false;
 	}
-	return true;
+
+	const retryBundle = await prepareFlashbotBundleForRetry({
+		...props,
+		notIncludedBlock: bundles[0].targetBlock,
+		previousBurstSize: bundles.length,
+		id: bundles[0].id,
+	});
+	return sendAndRetryUntilNotWorkable({ ...props, bundles: retryBundle });
 }

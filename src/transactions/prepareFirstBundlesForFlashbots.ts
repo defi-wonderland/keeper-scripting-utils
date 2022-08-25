@@ -1,5 +1,6 @@
 import { PrepareFirstBundlesForFlashbotsProps, PrepareFirstBundlesForFlashbotsReturnValue } from '../types';
 import { createBundles, formatBundlesTxsToType2 } from './';
+import { populateTransactions } from './populateTransactions';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 
 /**
@@ -20,24 +21,27 @@ import { TransactionRequest } from '@ethersproject/abstract-provider';
  * @returns An array of equal bundles with different target blocks
  */
 
+//TODO: handle options (gasLimit)
 export async function prepareFirstBundlesForFlashbots(
 	props: PrepareFirstBundlesForFlashbotsProps
 ): Promise<PrepareFirstBundlesForFlashbotsReturnValue> {
-	const { block, burstSize, chainId, functionArgs, functionName, futureBlocks, gasLimit, job, nonce, priorityFee } = props;
-	const tx: TransactionRequest = await job.populateTransaction[functionName](...functionArgs, {
-		gasLimit,
+	const { contract, functionName, block, priorityFee, futureBlocks, burstSize, functionArgs, options } = props;
+	const txs: TransactionRequest[] = await populateTransactions({
+		burstSize,
+		contract,
+		functionArgs,
+		functionName,
+		options,
 	});
-	tx.chainId = chainId;
-	tx.nonce = nonce;
 
 	const targetBlock = block.number + futureBlocks;
 	const blocksAhead = futureBlocks + burstSize; // done
-	const bundles = createBundles({ unsignedTx: tx, burstSize: burstSize, targetBlock, id: functionArgs[0] }); // TODO remove 3er paramenter. Its for loggin on dev phase
+	const bundles = createBundles({ unsignedTxs: txs, burstSize: burstSize, targetBlock, id: functionArgs[0] }); // TODO remove 3er paramenter. Its for loggin on dev phase
 	const formattedBundles = formatBundlesTxsToType2({ bundlesTxs: bundles, block, priorityFee, blocksAhead });
 
 	// This should probably return the transaction aswell
 	return {
-		tx,
+		txs,
 		formattedBundles,
 	};
 }

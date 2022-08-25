@@ -2,9 +2,9 @@ import StrategiesJob from '../abi/StrategiesJob.json';
 import { GasService } from './services/gas.service';
 import { BlockListener } from './subscriptions/blocks';
 import { sendTx } from './transactions';
-import { getNodeUrl, getPrivateKey } from './utils';
+import { getNodeUrlWss, getPrivateKey, toGwei } from './utils';
 import { stopAndRestartWork } from './utils/stopAndRestartWork';
-import { providers, Wallet, Contract, BigNumber } from 'ethers';
+import { providers, Wallet, Contract, BigNumber, Overrides } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
 
 const dotenv = require('dotenv');
@@ -12,11 +12,9 @@ dotenv.config();
 
 const network = 'polygon';
 const chainId = 137;
-const nodeUrl = getNodeUrl(network);
-const provider = new providers.JsonRpcProvider(nodeUrl);
+const nodeUrl = getNodeUrlWss(network);
+const provider = new providers.WebSocketProvider(nodeUrl);
 const blockListener = new BlockListener(provider);
-// const nodeUrl = getNodeUrlWss(network);
-// const provider = new providers.WebSocketProvider(nodeUrl);
 const JOB_ADDRESS = '0x647Fdb71eEA4f9A94E14964C40027718C931bEe5';
 const PK = getPrivateKey(network);
 const BLOCKS_TO_WAIT = 2;
@@ -105,15 +103,18 @@ function tryToWorkStrategy(strategy: string) {
 				txInProgress = true;
 
 				const gasFees = await gasService.getGasFees(chainId);
+				const options: Overrides = {
+					gasLimit: 10_000_000,
+					maxFeePerGas: toGwei(Math.ceil(gasFees.maxFeePerGas) + 10),
+					maxPriorityFeePerGas: toGwei(Math.ceil(gasFees.maxPriorityFeePerGas) + 10),
+					type: 2,
+				};
 				const explorerUrl = 'https://polygonscan.com';
 				await sendTx({
-					contract: job,
-					functionName: 'work',
-					maxFeePerGas: gasFees.maxFeePerGas,
-					maxPriorityFeePerGas: gasFees.maxPriorityFeePerGas,
-					gasLimit,
-					chainId,
-					functionArgs: [strategy, trigger, 10],
+					contractCall: () =>
+						job.work(strategy, trigger, 10, {
+							...options,
+						}),
 					explorerUrl,
 				});
 

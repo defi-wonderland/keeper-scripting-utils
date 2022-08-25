@@ -24,6 +24,7 @@ const signer = new Wallet(PK, provider);
 const job = new Contract(JOB_ADDRESS, StrategiesJob, signer);
 const lastWorkAt: Record<string, BigNumber> = {};
 const strategyWorkInProgress: Record<string, boolean> = {};
+
 let flashbots: Flashbots;
 
 let cooldown: BigNumber;
@@ -52,7 +53,6 @@ function tryToWorkStrategy(strategy: string) {
 	const notificationTime = readyTime;
 	const time = notificationTime.mul(1000).sub(Date.now()).toNumber();
 	const priorityFee = 10; // TODO DEHARDCODE
-	const gasLimit = 10_000_000; // TODO DEHARDCODE
 
 	const sub = timer(time)
 		.pipe(
@@ -80,27 +80,31 @@ function tryToWorkStrategy(strategy: string) {
 			// prepareFirstBundlesForFlashbots
 			strategyWorkInProgress[strategy] = true;
 			const currentNonce = await provider.getTransactionCount(signer.address);
-			const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots({
-				job,
+			const options = {
+				gasLimit: 10_000_000, // TODO DEHARDCODE
+				nonce: currentNonce,
+			};
+
+			const { txs, formattedBundles } = await prepareFirstBundlesForFlashbots({
+				contract: job,
 				functionName: 'work',
 				block,
 				priorityFee,
-				gasLimit,
-				chainId,
-				nonce: currentNonce,
 				futureBlocks: 0, // future blocks
 				burstSize: 2, // bundle size
-				functionArgs: [strategy, trigger, 10],
+				functionArgs: [[strategy, trigger, 10]],
+				options,
 			});
 
 			const result = await sendAndRetryUntilNotWorkable({
-				tx,
+				txs,
 				provider,
 				priorityFee,
 				signer,
 				bundles: formattedBundles,
 				newBurstSize: 3, // new bundle size
 				flashbots,
+				sendThroughStealthRelayer: false,
 				isWorkableCheck: () => job.workable(strategy, trigger),
 			});
 			console.log('===== Tx SUCCESS ===== ', strategy);

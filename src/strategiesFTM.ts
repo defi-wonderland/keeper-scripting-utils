@@ -1,7 +1,7 @@
 import StrategiesJob from '../abi/StrategiesJob.json';
 import { BlockListener } from './subscriptions/blocks';
-import { sendLegacyTransaction } from './transactions';
-import { getNodeUrl, getPrivateKey } from './utils';
+import { sendTx } from './transactions';
+import { getNodeUrlWss, getPrivateKey } from './utils';
 import { stopAndRestartWork } from './utils/stopAndRestartWork';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
@@ -10,12 +10,9 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const network = 'fantom';
-const chainId = 250;
-const nodeUrl = getNodeUrl(network);
-const provider = new providers.JsonRpcProvider(nodeUrl);
+const nodeUrl = getNodeUrlWss(network);
+const provider = new providers.WebSocketProvider(nodeUrl);
 const blockListener = new BlockListener(provider);
-// const nodeUrl = getNodeUrlWss(network);
-// const provider = new providers.WebSocketProvider(nodeUrl);
 const JOB_ADDRESS = '0x647Fdb71eEA4f9A94E14964C40027718C931bEe5';
 const PK = getPrivateKey(network);
 const BLOCKS_TO_WAIT = 2;
@@ -25,6 +22,9 @@ const job = new Contract(JOB_ADDRESS, StrategiesJob, signer);
 const lastWorkAt: Record<string, BigNumber> = {};
 const strategyWorkInQueue: Record<string, boolean> = {};
 const targetBlocks: Record<string, number> = {};
+const options = {
+	gasLimit: 1_000_000, // TODO DEHARDCODE
+};
 
 let txInProgress = false;
 let cooldown: BigNumber;
@@ -86,9 +86,11 @@ function tryToWorkStrategy(strategy: string) {
 				txInProgress = true;
 
 				const explorerUrl = 'https://ftmscan.com';
-				await sendLegacyTransaction({
-					chainId,
-					workFunction: () => job.work(strategy, trigger, 10),
+				await sendTx({
+					contractCall: () =>
+						job.work(strategy, trigger, 10, {
+							...options,
+						}),
 					explorerUrl,
 				});
 

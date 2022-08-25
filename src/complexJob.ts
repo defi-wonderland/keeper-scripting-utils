@@ -17,6 +17,8 @@ const JOB_ADDRESS = '0x4C8DB41095cD6fb755466463F0C6B2Ab9C826804';
 const PK = getPrivateKey(network);
 const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
 const FLASHBOTS_RPC = 'https://relay-goerli.flashbots.net';
+const secondsBefore = 0;
+const priorityFee = 10; // TODO DEHARDCODE
 
 const signer = new Wallet(PK, provider);
 const job = new Contract(JOB_ADDRESS, BasicJob, signer);
@@ -30,9 +32,6 @@ export async function runComplexJob(): Promise<void> {
 	// 0 = basic
 	// 1 = complex
 	const [lastWorkAt, cooldown]: BigNumber[] = await Promise.all([job.lastWorkAt(1), job.workCooldown()]);
-	const secondsBefore = 0;
-	const priorityFee = 10; // TODO DEHARDCODE
-	const gasLimit = 10_000_000; // TODO DEHARDCODE
 
 	const readyTime = lastWorkAt.add(cooldown);
 	const notificationTime = readyTime.sub(secondsBefore);
@@ -60,30 +59,33 @@ export async function runComplexJob(): Promise<void> {
 
 			txInProgress = true;
 			const currentNonce = await provider.getTransactionCount(signer.address);
+			const options = {
+				gasLimit: 10_000_000, // TODO DEHARDCODE
+				nonce: currentNonce,
+			};
 
-			const { tx, formattedBundles } = await prepareFirstBundlesForFlashbots({
-				job,
+			const { txs, formattedBundles } = await prepareFirstBundlesForFlashbots({
+				contract: job,
 				functionName: 'complexWork',
 				block,
 				priorityFee,
-				gasLimit,
-				chainId,
-				nonce: currentNonce,
 				futureBlocks: 0,
 				burstSize: 2,
-				functionArgs: [trigger, 2],
+				functionArgs: [[trigger, 2]],
+				options,
 			});
 
 			console.log('SENDING TX...');
 
 			const result = await sendAndRetryUntilNotWorkable({
-				tx,
+				txs,
 				provider,
 				priorityFee,
 				bundles: formattedBundles,
 				newBurstSize: 3,
 				flashbots,
 				signer,
+				sendThroughStealthRelayer: false,
 				isWorkableCheck: () => job.complexWorkable(trigger),
 			});
 
