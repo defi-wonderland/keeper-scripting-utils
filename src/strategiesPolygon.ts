@@ -1,10 +1,11 @@
 import StrategiesJob from '../abi/StrategiesJob.json';
 import { GasService } from './services/gas.service';
-import { getNewBlocks } from './subscriptions/blocks';
+import { BlockListener } from './subscriptions/blocks';
 import { sendTx } from './transactions';
-import { Logger, getNodeUrl, getPrivateKey, loadConfig } from './utils';
+import { getNodeUrl, getPrivateKey } from './utils';
+import { stopAndRestartWork } from './utils/stopAndRestartWork';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
-import { mergeMap, timer, filter } from 'rxjs';
+import { mergeMap, timer } from 'rxjs';
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -13,6 +14,7 @@ const network = 'polygon';
 const chainId = 137;
 const nodeUrl = getNodeUrl(network);
 const provider = new providers.JsonRpcProvider(nodeUrl);
+const blockListener = new BlockListener(provider);
 // const nodeUrl = getNodeUrlWss(network);
 // const provider = new providers.WebSocketProvider(nodeUrl);
 const JOB_ADDRESS = '0x647Fdb71eEA4f9A94E14964C40027718C931bEe5';
@@ -26,11 +28,12 @@ const lastWorkAt: Record<string, BigNumber> = {};
 const strategyWorkInQueue: Record<string, boolean> = {};
 const targetBlocks: Record<string, number> = {};
 
-const readyStrategies: string[] = [];
 let txInProgress = false;
+let cooldown: BigNumber;
 
 export async function runStrategiesJob(): Promise<void> {
-	const [strategies, cooldown]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
+	const [strategies, cd]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
+	cooldown = cd;
 
 	const maxStrategiesPerBatch = 5;
 	const batchesToCreate = Math.ceil(strategies.length / maxStrategiesPerBatch);
@@ -47,11 +50,11 @@ export async function runStrategiesJob(): Promise<void> {
 	}
 
 	strategies.forEach((strategy) => {
-		tryToWorkStrategy(strategy, cooldown);
+		tryToWorkStrategy(strategy);
 	});
 }
 
-function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
+function tryToWorkStrategy(strategy: string) {
 	console.log('Start Working on strategy: ', strategy);
 
 	const readyTime = lastWorkAt[strategy].add(cooldown);
@@ -59,13 +62,8 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 	const time = notificationTime.mul(1000).sub(Date.now()).toNumber();
 	const gasLimit = 10_000_000; // TODO DEHARDCODE
 
-	timer(time)
-		.pipe(
-			mergeMap(() => getNewBlocks(provider)),
-			filter(() => {
-				return lastWorkAt[strategy].add(cooldown).lt(Date.now());
-			})
-		)
+	const sub = timer(time)
+		.pipe(mergeMap(() => blockListener.stream()))
 		.subscribe(async (block) => {
 			if (txInProgress) return;
 			console.log('block: ', block.number);
@@ -73,7 +71,7 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 			console.log('Strategy cooldown completed: ', strategy);
 
 			if (strategyWorkInQueue[strategy] && block.number < targetBlocks[strategy]) {
-				console.log('Strategy WORK IN QUEUE BUT NOT READY: ', strategy);
+				console.warn('Strategy WORK IN QUEUE BUT NOT READY: ', strategy);
 				return;
 			}
 
@@ -86,14 +84,17 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 				console.log({ strategy });
 			}
 			if (!isWorkable) {
-				console.log('NOT WORKABLE: ', block.number, ' strategy: ', strategy);
-				removeElement(readyStrategies, strategy);
-				lastWorkAt[strategy] = await job.lastWorkAt(strategy);
-				strategyWorkInQueue[strategy] = false;
-				targetBlocks[strategy] = 0;
+				console.warn('NOT WORKABLE: ', block.number, ' strategy: ', strategy);
+				const tempLastWorkAt: BigNumber = await job.lastWorkAt(strategy);
+				if (!tempLastWorkAt.eq(lastWorkAt[strategy])) {
+					lastWorkAt[strategy] = tempLastWorkAt;
+					strategyWorkInQueue[strategy] = false;
+					targetBlocks[strategy] = 0;
+					stopAndRestartWork(strategy, blockListener, sub, tryToWorkStrategy);
+				}
 				return;
 			}
-			if (!readyStrategies.includes(strategy) && (!targetBlocks[strategy] || targetBlocks[strategy] == 0)) {
+			if (!targetBlocks[strategy] || targetBlocks[strategy] === 0) {
 				strategyWorkInQueue[strategy] = true;
 				targetBlocks[strategy] = block.number + BLOCKS_TO_WAIT;
 				return;
@@ -102,7 +103,6 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 			try {
 				if (txInProgress) return;
 				txInProgress = true;
-				readyStrategies.push(strategy);
 
 				const gasFees = await gasService.getGasFees(chainId);
 				const explorerUrl = 'https://polygonscan.com';
@@ -117,31 +117,23 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber) {
 					explorerUrl,
 				});
 
-				console.log('===== Tx SUCCESS ===== ', strategy);
+				console.log(`===== Tx SUCCESS IN BLOCK ${block.number} ===== `, strategy);
 				lastWorkAt[strategy] = await job.lastWorkAt(strategy);
 				strategyWorkInQueue[strategy] = false;
 				targetBlocks[strategy] = 0;
-				removeElement(readyStrategies, strategy);
 				txInProgress = false;
+				stopAndRestartWork(strategy, blockListener, sub, tryToWorkStrategy);
 			} catch (error) {
 				console.log('===== Tx FAILED ===== ', strategy);
 				console.log(`Transaction failed. Reason: ${error.message}`);
+				txInProgress = false;
+				stopAndRestartWork(strategy, blockListener, sub, tryToWorkStrategy);
 			}
 		});
 }
 
-function removeElement(arr: any[], element: any) {
-	const index = arr.indexOf(element);
-	if (index == -1) return arr;
-	arr.splice(index, 1);
-}
-
 if (!process.env.TEST_MODE) {
 	(async () => {
-		const config = await loadConfig();
-		console.log({ config: config.log });
-
-		Logger.setLogConfig(config.log);
 		runStrategiesJob();
 	})();
 }

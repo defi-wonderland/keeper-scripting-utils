@@ -1,8 +1,9 @@
 import StrategiesJob from '../abi/StrategiesJob.json';
 import { Flashbots } from './flashbots/flashbots';
-import { getNewBlocks } from './subscriptions/blocks';
+import { BlockListener } from './subscriptions/blocks';
 import { prepareFirstBundlesForFlashbots, sendAndRetryUntilNotWorkable } from './transactions';
-import { Logger, getNodeUrlWss, getPrivateKey, loadConfig } from './utils';
+import { getNodeUrlWss, getPrivateKey } from './utils';
+import { stopAndRestartWork } from './utils/stopAndRestartWork';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer, filter } from 'rxjs';
 
@@ -17,55 +18,47 @@ const JOB_ADDRESS = '0xbA3ae0D23D3CFb74d829615b304F02C366e75d5E';
 const PK = getPrivateKey(network);
 const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
 const FLASHBOTS_RPC = 'https://relay-goerli.flashbots.net';
+const blockListener = new BlockListener(provider);
 
 const signer = new Wallet(PK, provider);
 const job = new Contract(JOB_ADDRESS, StrategiesJob, signer);
-const lastWorkAt2: Record<string, BigNumber> = {};
+const lastWorkAt: Record<string, BigNumber> = {};
 const strategyWorkInProgress: Record<string, boolean> = {};
+let flashbots: Flashbots;
+
+let cooldown: BigNumber;
 
 export async function runStrategiesJob(): Promise<void> {
-	const winston = Logger.getServiceLogger('test');
-	const flashbots = await Flashbots.init(
-		signer,
-		new Wallet(FLASHBOTS_PK as string),
-		provider,
-		[FLASHBOTS_RPC],
-		false,
-		chainId,
-		winston
-	);
-
-	const [strategies, cooldown2]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
-	// fetch 20 strats
-	// split in 4 forts
-
-	// INSIDE FORK
+	if (!flashbots) {
+		flashbots = await Flashbots.init(signer, new Wallet(FLASHBOTS_PK as string), provider, [FLASHBOTS_RPC], false, chainId);
+	}
+	const [strategies, cd]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
+	cooldown = cd;
 
 	const allLastWorksAt: BigNumber[] = await Promise.all(strategies.map((strategy) => job.lastWorkAt(strategy)));
 	strategies.forEach((strategy, i) => {
-		lastWorkAt2[strategy] = allLastWorksAt[i];
+		lastWorkAt[strategy] = allLastWorksAt[i];
 	});
 
-	strategies.slice(0, 3).forEach((strategy) => {
-		tryToWorkStrategy(strategy, cooldown2, flashbots);
+	strategies.forEach((strategy) => {
+		tryToWorkStrategy(strategy);
 	});
 }
 
-function tryToWorkStrategy(strategy: string, cooldown: BigNumber, flashbots: Flashbots) {
+function tryToWorkStrategy(strategy: string) {
 	console.log('Start Working on strategy: ', strategy);
 
-	const readyTime = lastWorkAt2[strategy].add(cooldown);
+	const readyTime = lastWorkAt[strategy].add(cooldown);
 	const notificationTime = readyTime;
 	const time = notificationTime.mul(1000).sub(Date.now()).toNumber();
 	const priorityFee = 10; // TODO DEHARDCODE
 	const gasLimit = 10_000_000; // TODO DEHARDCODE
 
-	timer(time)
+	const sub = timer(time)
 		.pipe(
-			mergeMap(() => getNewBlocks(provider)),
+			mergeMap(() => blockListener.stream()),
 			filter(() => {
-				// if (strategyWorkInProgress[strategy]) console.log('strategy work in progress: ', strategy);
-				return lastWorkAt2[strategy].add(cooldown).lt(Date.now()) && !strategyWorkInProgress[strategy];
+				return !strategyWorkInProgress[strategy];
 			})
 		)
 		.subscribe(async (block) => {
@@ -73,15 +66,13 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber, flashbots: Fla
 
 			console.log('Strategy cooldown completed: ', strategy);
 
-			if (strategyWorkInProgress[strategy]) {
-				console.log('Strategy WORK IN PROGRESS: ', strategy);
-				return;
-			}
-
 			const trigger = true;
 			const isWorkable = await job.workable(strategy, trigger);
 			if (!isWorkable) {
 				console.log('NOT WORKABLE: ', block.number, ' strategy: ', strategy);
+				lastWorkAt[strategy] = await job.lastWorkAt(strategy);
+				strategyWorkInProgress[strategy] = false;
+				stopAndRestartWork(strategy, blockListener, sub, tryToWorkStrategy);
 				return;
 			}
 			console.log('Strategy is workable: ', strategy);
@@ -102,7 +93,6 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber, flashbots: Fla
 				functionArgs: [strategy, trigger, 10],
 			});
 
-			// sendAndRetryUntilNotWorkable
 			const result = await sendAndRetryUntilNotWorkable({
 				tx,
 				provider,
@@ -114,18 +104,14 @@ function tryToWorkStrategy(strategy: string, cooldown: BigNumber, flashbots: Fla
 				isWorkableCheck: () => job.workable(strategy, trigger),
 			});
 			console.log('===== Tx SUCCESS ===== ', strategy);
-			// actualizar lastWorkAt a mano
-			lastWorkAt2[strategy] = await job.lastWorkAt(strategy);
+			lastWorkAt[strategy] = await job.lastWorkAt(strategy);
 			strategyWorkInProgress[strategy] = false;
+			stopAndRestartWork(strategy, blockListener, sub, tryToWorkStrategy);
 		});
 }
 
 if (!process.env.TEST_MODE) {
 	(async () => {
-		const config = await loadConfig();
-		console.log({ config: config.log });
-
-		Logger.setLogConfig(config.log);
 		runStrategiesJob();
 	})();
 }

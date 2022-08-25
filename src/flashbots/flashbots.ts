@@ -7,14 +7,12 @@ import {
 	SimulationResponse,
 } from '@flashbots/ethers-provider-bundle';
 import { providers } from 'ethers';
-import winston from 'winston';
 
 export class Flashbots {
 	private constructor(
 		private txSigner: Signer,
 		private flashbotsProviders: FlashbotsBundleProvider[],
-		private shouldSimulateBundle: boolean,
-		private log: winston.Logger
+		private shouldSimulateBundle: boolean
 	) {}
 
 	static async init(
@@ -23,8 +21,7 @@ export class Flashbots {
 		provider: providers.JsonRpcProvider | providers.WebSocketProvider,
 		flashbotRelayers: string[],
 		simulateBundle: boolean,
-		chainId: number,
-		log: winston.Logger
+		chainId: number
 	): Promise<Flashbots> {
 		// create a provider for every relay defined in the config
 		const flashbotsProviders = await Promise.all(
@@ -33,7 +30,7 @@ export class Flashbots {
 			})
 		);
 
-		return new Flashbots(txSigner, flashbotsProviders, simulateBundle, log);
+		return new Flashbots(txSigner, flashbotsProviders, simulateBundle);
 	}
 
 	async send(unsignedTxs: TransactionRequest[], targetBlock: number): Promise<boolean> {
@@ -66,7 +63,7 @@ export class Flashbots {
 			const singedBundle = await provider.signBundle(bundle);
 			simulation = await provider.simulate(singedBundle, targetBlock);
 			if ('error' in simulation || simulation.firstRevert) {
-				this.log.debug(`Bundle simulation error`, simulation);
+				console.error(`Bundle simulation error`, simulation);
 				return false;
 			}
 		} catch (error) {
@@ -74,11 +71,11 @@ export class Flashbots {
 			if (error instanceof Error) errorMessage = error.message;
 			else errorMessage = String(error);
 
-			this.log.debug(`Bundle simulation error`, { errorMessage });
+			console.error(`Bundle simulation error`, { errorMessage });
 			return false;
 		}
 
-		this.log.debug(`Bundle simulation success`, simulation);
+		console.debug(`Bundle simulation success`, simulation);
 		return true;
 	}
 
@@ -101,29 +98,29 @@ export class Flashbots {
 		bundle: FlashbotsBundleRawTransaction[],
 		targetBlock: number
 	): Promise<boolean> {
-		this.log.debug(`Sending bundle`);
+		console.info(`Sending bundle`);
 
 		try {
 			const response = await provider.sendBundle(bundle, targetBlock);
 
 			if ('error' in response) {
-				this.log.debug(`Bundle execution error`, response.error);
+				console.warn(`Bundle execution error`, response.error);
 				return false;
 			}
 
 			const resolution = await response.wait();
 
 			if (resolution == FlashbotsBundleResolution.BundleIncluded) {
-				this.log.info(`Bundle status ${targetBlock}: BundleIncluded`);
+				console.debug(`Bundle status ${targetBlock}: BundleIncluded`);
 				return true;
 			} else if (resolution == FlashbotsBundleResolution.BlockPassedWithoutInclusion) {
-				this.log.info(`Bundle status at ${targetBlock}: BlockPassedWithoutInclusion`);
+				console.debug(`Bundle status at ${targetBlock}: BlockPassedWithoutInclusion`);
 			} else if (resolution == FlashbotsBundleResolution.AccountNonceTooHigh) {
-				this.log.warn(`Bundle status at ${targetBlock}: AccountNonceTooHigh`);
+				console.warn(`Bundle status at ${targetBlock}: AccountNonceTooHigh`);
 				return true;
 			}
 		} catch (err: unknown) {
-			this.log.warn(`Failed to send bundle`, { error: err });
+			console.error(`Failed to send bundle`, { error: err });
 		}
 
 		return false;

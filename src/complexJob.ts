@@ -2,7 +2,7 @@ import BasicJob from '../abi/BasicJob.json';
 import { Flashbots } from './flashbots/flashbots';
 import { getNewBlocks, stopBlocks } from './subscriptions/blocks';
 import { prepareFirstBundlesForFlashbots, sendAndRetryUntilNotWorkable } from './transactions';
-import { Logger, loadConfig, getNodeUrlWss, getPrivateKey } from './utils';
+import { getNodeUrlWss, getPrivateKey } from './utils';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
 
@@ -20,18 +20,12 @@ const FLASHBOTS_RPC = 'https://relay-goerli.flashbots.net';
 
 const signer = new Wallet(PK, provider);
 const job = new Contract(JOB_ADDRESS, BasicJob, signer);
+let flashbots: Flashbots;
 
 export async function runComplexJob(): Promise<void> {
-	const winston = Logger.getServiceLogger('test');
-	const flashbots = await Flashbots.init(
-		signer,
-		new Wallet(FLASHBOTS_PK as string),
-		provider,
-		[FLASHBOTS_RPC],
-		false,
-		chainId,
-		winston
-	);
+	if (!flashbots) {
+		flashbots = await Flashbots.init(signer, new Wallet(FLASHBOTS_PK as string), provider, [FLASHBOTS_RPC], false, chainId);
+	}
 
 	// 0 = basic
 	// 1 = complex
@@ -47,7 +41,7 @@ export async function runComplexJob(): Promise<void> {
 	let counter = 0; // TODO remove
 
 	console.log('started cooldown observable');
-	timer(time)
+	const sub = timer(time)
 		.pipe(mergeMap(() => getNewBlocks(provider)))
 		.subscribe(async (block) => {
 			counter++;
@@ -97,16 +91,13 @@ export async function runComplexJob(): Promise<void> {
 
 			txInProgress = false;
 			stopBlocks(provider);
+			sub.unsubscribe();
 			runComplexJob();
 		});
 }
 
 if (!process.env.TEST_MODE) {
 	(async () => {
-		const config = await loadConfig();
-		console.log({ config: config.log });
-
-		Logger.setLogConfig(config.log);
 		runComplexJob();
 	})();
 }

@@ -1,7 +1,7 @@
 import StrategiesJob from '../abi/StrategiesJob.json';
 import { BlockListener } from './subscriptions/blocks';
-import { sendLegacyTransaction } from './transactions';
-import { getNodeUrl, getPrivateKey } from './utils';
+import { sendTx } from './transactions';
+import { getPrivateKey, getNodeUrlWss } from './utils';
 import { stopAndRestartWork } from './utils/stopAndRestartWork';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
@@ -9,14 +9,12 @@ import { mergeMap, timer } from 'rxjs';
 const dotenv = require('dotenv');
 dotenv.config();
 
-const network = 'fantom';
-const chainId = 250;
-const nodeUrl = getNodeUrl(network);
-const provider = new providers.JsonRpcProvider(nodeUrl);
+const network = 'goerli';
+const chainId = 5;
+const nodeUrl = getNodeUrlWss(network);
+const provider = new providers.WebSocketProvider(nodeUrl);
 const blockListener = new BlockListener(provider);
-// const nodeUrl = getNodeUrlWss(network);
-// const provider = new providers.WebSocketProvider(nodeUrl);
-const JOB_ADDRESS = '0x647Fdb71eEA4f9A94E14964C40027718C931bEe5';
+const JOB_ADDRESS = '0xbA3ae0D23D3CFb74d829615b304F02C366e75d5E';
 const PK = getPrivateKey(network);
 const BLOCKS_TO_WAIT = 2;
 
@@ -33,10 +31,19 @@ export async function runStrategiesJob(): Promise<void> {
 	const [strategies, cd]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
 	cooldown = cd;
 
-	const allLastWorksAt: BigNumber[] = await Promise.all(strategies.map((strategy) => job.lastWorkAt(strategy)));
-	strategies.forEach((strategy, i) => {
-		lastWorkAt[strategy] = allLastWorksAt[i];
-	});
+	const maxStrategiesPerBatch = 5;
+	const batchesToCreate = Math.ceil(strategies.length / maxStrategiesPerBatch);
+
+	for (let index = 0; index < batchesToCreate; index++) {
+		const start = index * maxStrategiesPerBatch;
+		const batch = strategies.slice(start, start + maxStrategiesPerBatch);
+		console.log('Fetching batch number:', index + 1);
+
+		const lastWorksAt: BigNumber[] = await Promise.all(batch.map((strategy) => job.lastWorkAt(strategy)));
+		batch.forEach((strategy, i) => {
+			lastWorkAt[strategy] = lastWorksAt[i];
+		});
+	}
 
 	strategies.forEach((strategy) => {
 		tryToWorkStrategy(strategy);
@@ -49,23 +56,31 @@ function tryToWorkStrategy(strategy: string) {
 	const readyTime = lastWorkAt[strategy].add(cooldown);
 	const notificationTime = readyTime;
 	const time = notificationTime.mul(1000).sub(Date.now()).toNumber();
+	const gasLimit = 10_000_000; // TODO DEHARDCODE
 
-	const sub = timer(time + 5000) // adding 5 more seconds for FTM to deal with desync
+	const sub = timer(time)
 		.pipe(mergeMap(() => blockListener.stream()))
 		.subscribe(async (block) => {
+			if (txInProgress) return;
 			console.log('block: ', block.number);
 
 			console.log('Strategy cooldown completed: ', strategy);
 
 			if (strategyWorkInQueue[strategy] && block.number < targetBlocks[strategy]) {
-				console.warn('Strategy WORK IN QUEUE BUT NOT READY: ', strategy);
+				console.log('Strategy WORK IN QUEUE BUT WAITING TO REACH TARGET BLOCK: ', strategy);
 				return;
 			}
 
 			const trigger = true;
-			const isWorkable = await job.workable(strategy, trigger);
+			let isWorkable = false;
+			try {
+				isWorkable = await job.workable(strategy, trigger);
+			} catch (error) {
+				console.log('message: ', error.message);
+				console.log({ strategy });
+			}
 			if (!isWorkable) {
-				console.warn('NOT WORKABLE: ', block.number, ' strategy: ', strategy);
+				console.log('NOT WORKABLE: ', block.number, ' strategy: ', strategy);
 				const tempLastWorkAt: BigNumber = await job.lastWorkAt(strategy);
 				if (!tempLastWorkAt.eq(lastWorkAt[strategy])) {
 					lastWorkAt[strategy] = tempLastWorkAt;
@@ -84,24 +99,30 @@ function tryToWorkStrategy(strategy: string) {
 			try {
 				if (txInProgress) return;
 				txInProgress = true;
-
-				const explorerUrl = 'https://ftmscan.com';
-				await sendLegacyTransaction({
+				const explorerUrl = 'https://goerli.etherscan.io';
+				await sendTx({
+					contract: job,
+					functionName: 'work',
+					maxPriorityFeePerGas: 10, // TODO hardcoded
+					maxFeePerGas: 20, // TODO hardcoded
+					gasLimit,
 					chainId,
-					workFunction: () => job.work(strategy, trigger, 10),
+					functionArgs: [strategy, trigger, 10],
 					explorerUrl,
 				});
 
-				console.log('===== Tx SUCCESS ===== ', strategy);
+				console.log(`===== Tx SUCCESS IN BLOCK ${block.number} ===== `, strategy);
 				lastWorkAt[strategy] = await job.lastWorkAt(strategy);
 				strategyWorkInQueue[strategy] = false;
 				targetBlocks[strategy] = 0;
 				txInProgress = false;
+
 				stopAndRestartWork(strategy, blockListener, sub, tryToWorkStrategy);
 			} catch (error) {
 				console.log('===== Tx FAILED ===== ', strategy);
 				console.log(`Transaction failed. Reason: ${error.message}`);
 				txInProgress = false;
+
 				stopAndRestartWork(strategy, blockListener, sub, tryToWorkStrategy);
 			}
 		});
