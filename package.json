@@ -25,6 +25,7 @@
     "start:strategies-polygon": "ts-node src/strategiesPolygon.ts",
     "start:strategies-ftm": "ts-node src/strategiesFTM.ts",
     "start:strategies-goerli": "ts-node src/strategiesJobEthNoFB.ts",
+    "start:strategies-optimism": "ts-node src/strategiesOptimism.ts",
     "build": "tsc -p tsconfig.json",
     "prod": "node dist/tsc/src/main.js",
     "test": "tsc && TEST_MODE=true jest --verbose",

@@ -9,7 +9,7 @@ import { mergeMap, timer } from 'rxjs';
 const dotenv = require('dotenv');
 dotenv.config();
 
-const network = 'fantom';
+const network = 'optimism';
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
 const blockListener = new BlockListener(provider);
@@ -38,7 +38,7 @@ export async function runStrategiesJob(): Promise<void> {
 		lastWorkAt[strategy] = allLastWorksAt[i];
 	});
 
-	strategies.forEach((strategy) => {
+	strategies.slice(0, 1).forEach((strategy) => {
 		tryToWorkStrategy(strategy);
 	});
 }
@@ -54,9 +54,8 @@ function tryToWorkStrategy(strategy: string) {
 		.pipe(mergeMap(() => blockListener.stream()))
 		.subscribe(async (block) => {
 			if (txInProgress) return;
-			console.log('block: ', block.number);
 
-			console.log('Strategy cooldown completed: ', strategy);
+			console.log(`${strategy} cooldown completed at block: ${block.number}`);
 
 			if (strategyWorkInQueue[strategy] && block.number < targetBlocks[strategy]) {
 				console.warn('Strategy WORK IN QUEUE BUT NOT READY: ', strategy);
@@ -86,7 +85,7 @@ function tryToWorkStrategy(strategy: string) {
 				if (txInProgress) return;
 				txInProgress = true;
 
-				const explorerUrl = 'https://ftmscan.com';
+				const explorerUrl = 'https://blockscout.com/optimism/goerli';
 				await sendTx({
 					contractCall: () =>
 						job.work(strategy, trigger, 10, {
