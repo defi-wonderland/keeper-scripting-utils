@@ -1,7 +1,7 @@
 import StrategiesJob from '../abi/StrategiesJob.json';
 import { BlockListener } from './subscriptions/blocks';
-import { getGasType2Parameters, sendTx } from './transactions';
-import { getPrivateKey, getNodeUrlWss, toGwei } from './utils';
+import { getMainnetGasType2Parameters, sendTx } from './transactions';
+import { getPrivateKey, getNodeUrlWss } from './utils';
 import { stopAndRestartWork } from './utils/stopAndRestartWork';
 import { providers, Wallet, Contract, BigNumber, Overrides } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
@@ -16,6 +16,7 @@ const blockListener = new BlockListener(provider);
 const JOB_ADDRESS = '0xbA3ae0D23D3CFb74d829615b304F02C366e75d5E';
 const PK = getPrivateKey(network);
 const BLOCKS_TO_WAIT = 2;
+const PRIORITY_FEE = 10; // Dehardcode
 
 const signer = new Wallet(PK, provider);
 const job = new Contract(JOB_ADDRESS, StrategiesJob, signer);
@@ -97,12 +98,12 @@ function tryToWorkStrategy(strategy: string) {
 			try {
 				if (txInProgress) return;
 				txInProgress = true;
-				const usetSetPriorityFee = 10; // This could be dynamically calculated
-				const { maxFeePerGas, priorityFee } = getGasType2Parameters(block, usetSetPriorityFee);
+				const { maxFeePerGas, priorityFee } = getMainnetGasType2Parameters({ block, blocksAhead: 0, priorityFee: PRIORITY_FEE });
 				const options: Overrides = {
 					gasLimit: 10_000_000,
 					maxFeePerGas,
 					maxPriorityFeePerGas: priorityFee,
+					type: 2,
 				};
 
 				const explorerUrl = 'https://goerli.etherscan.io';

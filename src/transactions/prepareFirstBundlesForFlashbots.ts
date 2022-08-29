@@ -1,5 +1,5 @@
 import { PrepareFirstBundlesForFlashbotsProps, PrepareFirstBundlesForFlashbotsReturnValue } from '../types';
-import { createBundles, formatBundlesTxsToType2 } from './';
+import { createBundles } from './';
 import { populateTransactions } from './populateTransactions';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 
@@ -21,11 +21,10 @@ import { TransactionRequest } from '@ethersproject/abstract-provider';
  * @returns An array of equal bundles with different target blocks
  */
 
-//TODO: handle options (gasLimit)
 export async function prepareFirstBundlesForFlashbots(
 	props: PrepareFirstBundlesForFlashbotsProps
 ): Promise<PrepareFirstBundlesForFlashbotsReturnValue> {
-	const { contract, functionName, block, priorityFee, futureBlocks, burstSize, functionArgs, options } = props;
+	const { contract, functionName, block, futureBlocks, burstSize, functionArgs, options } = props;
 	const txs: TransactionRequest[] = await populateTransactions({
 		burstSize,
 		contract,
@@ -35,13 +34,10 @@ export async function prepareFirstBundlesForFlashbots(
 	});
 
 	const targetBlock = block.number + futureBlocks;
-	const blocksAhead = futureBlocks + burstSize; // done
 	const bundles = createBundles({ unsignedTxs: txs, burstSize: burstSize, targetBlock, id: functionArgs[0] }); // TODO remove 3er paramenter. Its for loggin on dev phase
-	const formattedBundles = formatBundlesTxsToType2({ bundlesTxs: bundles, block, priorityFee, blocksAhead });
 
-	// This should probably return the transaction aswell
 	return {
 		txs,
-		formattedBundles,
+		bundles,
 	};
 }

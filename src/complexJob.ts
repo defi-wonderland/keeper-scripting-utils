@@ -1,7 +1,7 @@
 import BasicJob from '../abi/BasicJob.json';
 import { Flashbots } from './flashbots/flashbots';
 import { getNewBlocks, stopBlocks } from './subscriptions/blocks';
-import { prepareFirstBundlesForFlashbots, sendAndRetryUntilNotWorkable } from './transactions';
+import { getMainnetGasType2Parameters, prepareFirstBundlesForFlashbots, sendAndRetryUntilNotWorkable } from './transactions';
 import { getNodeUrlWss, getPrivateKey } from './utils';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
@@ -18,7 +18,11 @@ const PK = getPrivateKey(network);
 const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
 const FLASHBOTS_RPC = 'https://relay-goerli.flashbots.net';
 const secondsBefore = 0;
-const priorityFee = 10; // TODO DEHARDCODE
+
+const FIRST_BURST_SIZE = 2;
+const FUTURE_BLOCKS = 0;
+const RETRY_BURST_SIZE = 3;
+const PRIORITY_FEE = 10; // Dehardcode
 
 const signer = new Wallet(PK, provider);
 const job = new Contract(JOB_ADDRESS, BasicJob, signer);
@@ -58,31 +62,38 @@ export async function runComplexJob(): Promise<void> {
 			}
 
 			txInProgress = true;
+
+			const blocksAhead = FUTURE_BLOCKS + FIRST_BURST_SIZE;
+
 			const currentNonce = await provider.getTransactionCount(signer.address);
+			const { priorityFee, maxFeePerGas } = getMainnetGasType2Parameters({ block, blocksAhead, priorityFee: PRIORITY_FEE });
+
 			const options = {
-				gasLimit: 10_000_000, // TODO DEHARDCODE
+				gasLimit: 10_000_000,
 				nonce: currentNonce,
+				maxFeePerGas,
+				maxPriorityFeePerGas: priorityFee,
+				type: 2,
 			};
 
-			const { txs, formattedBundles } = await prepareFirstBundlesForFlashbots({
+			const { txs, bundles } = await prepareFirstBundlesForFlashbots({
 				contract: job,
 				functionName: 'complexWork',
 				block,
-				priorityFee,
-				futureBlocks: 0,
-				burstSize: 2,
+				futureBlocks: FUTURE_BLOCKS,
+				burstSize: FIRST_BURST_SIZE,
 				functionArgs: [[trigger, 2]],
 				options,
 			});
 
 			console.log('SENDING TX...');
 
-			const result = await sendAndRetryUntilNotWorkable({
+			await sendAndRetryUntilNotWorkable({
 				txs,
 				provider,
-				priorityFee,
-				bundles: formattedBundles,
-				newBurstSize: 3,
+				priorityFee: PRIORITY_FEE,
+				bundles,
+				newBurstSize: RETRY_BURST_SIZE,
 				flashbots,
 				signer,
 				sendThroughStealthRelayer: false,
