@@ -54,6 +54,7 @@ export interface PopulateTransactionsProps {
 	functionName: string;
 	functionArgs: any[][];
 	burstSize: number;
+	chainId: number;
 	options?: Overrides;
 }
 

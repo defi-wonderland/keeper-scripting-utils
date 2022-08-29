@@ -11,7 +11,6 @@ export async function prepareFlashbotBundleForRetry(props: PrepareFlashbotBundle
 	const targetBlock = notIncludedBlock + previousBurstSize;
 	const blocksAhead = previousBurstSize + newBurstSize - 1;
 	const latestNonce = await provider.getTransactionCount(signer.address);
-
 	let newTxs: TransactionRequest[] = [];
 
 	if (sendThroughStealthRelayer) {
@@ -20,9 +19,10 @@ export async function prepareFlashbotBundleForRetry(props: PrepareFlashbotBundle
 			const blockNumber = targetBlock + index;
 			const data = hexZeroPad(hexlify(blockNumber), 32); // calculates the hex value of blockNumber and pads it until it has a length of 32
 			const slicedData = hexDataSlice(tx.data as BytesLike, 0, 100); // stores all the bytes from 0 - 100
+			const workDataSection = hexDataSlice(tx.data as BytesLike, 132); // store the remaining bytes after the block bytes
 			return {
 				...tx,
-				data: hexConcat([slicedData, data]),
+				data: hexConcat([slicedData, data, workDataSection]),
 				nonce: latestNonce,
 			};
 		});
