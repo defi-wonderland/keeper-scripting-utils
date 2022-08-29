@@ -86,11 +86,13 @@ function tryToWorkStrategy(strategy: string) {
 				if (txInProgress) return;
 				txInProgress = true;
 
+				const gasPrice = await provider.getGasPrice();
 				const explorerUrl = 'https://ftmscan.com';
 				await sendTx({
 					contractCall: () =>
 						job.work(strategy, trigger, 10, {
 							...options,
+							gasPrice,
 						}),
 					explorerUrl,
 				});
