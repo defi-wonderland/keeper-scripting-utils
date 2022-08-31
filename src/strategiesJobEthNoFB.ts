@@ -74,7 +74,7 @@ function tryToWorkStrategy(strategy: string) {
 			let isWorkable = false;
 			try {
 				isWorkable = await job.workable(strategy, trigger);
-			} catch (error) {
+			} catch (error: any) {
 				console.log('message: ', error.message);
 				console.log({ strategy });
 			}
@@ -122,7 +122,7 @@ function tryToWorkStrategy(strategy: string) {
 				txInProgress = false;
 
 				stopAndRestartWork(strategy, blockListener, sub, tryToWorkStrategy);
-			} catch (error) {
+			} catch (error: any) {
 				console.log('===== Tx FAILED ===== ', strategy);
 				console.log(`Transaction failed. Reason: ${error.message}`);
 				txInProgress = false;

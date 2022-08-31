@@ -100,7 +100,7 @@ function tryToWorkStrategy(strategy: string) {
 				targetBlocks[strategy] = 0;
 				txInProgress = false;
 				stopAndRestartWork(strategy, blockListener, sub, tryToWorkStrategy);
-			} catch (error) {
+			} catch (error: any) {
 				console.log('===== Tx FAILED ===== ', strategy);
 				console.log(`Transaction failed. Reason: ${error.message}`);
 				txInProgress = false;

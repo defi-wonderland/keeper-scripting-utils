@@ -8,10 +8,14 @@ export function getMainnetGasType2Parameters(props: GetMainnetGasType2Parameters
 
 	const { block, blocksAhead, priorityFee } = props;
 
+	if (!block.baseFeePerGas) {
+		throw new Error('Missing property baseFeePerGas on block');
+	}
+
 	if (blocksAhead == 0 || blocksAhead == 1) {
-		nextBlockBaseFee = FlashbotsBundleProvider.getBaseFeeInNextBlock(block.baseFeePerGas!, block.gasUsed, block.gasLimit);
+		nextBlockBaseFee = FlashbotsBundleProvider.getBaseFeeInNextBlock(block.baseFeePerGas, block.gasUsed, block.gasLimit);
 	} else {
-		nextBlockBaseFee = FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas!, blocksAhead);
+		nextBlockBaseFee = FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksAhead);
 	}
 	const priorityFeeToGwei = toGwei(priorityFee);
 	const maxFeePerGas = priorityFeeToGwei.add(nextBlockBaseFee);

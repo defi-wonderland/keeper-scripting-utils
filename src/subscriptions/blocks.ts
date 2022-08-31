@@ -2,7 +2,7 @@ import { emitWhenCloseToCooldown } from './cooldown';
 import { Block } from '@ethersproject/abstract-provider';
 import { BigNumber, providers } from 'ethers';
 import { from, fromEvent, merge, mergeMap, Observable, Subject, Subscription } from 'rxjs';
-import { debounceTime, filter, share, shareReplay } from 'rxjs/operators';
+import { filter, shareReplay } from 'rxjs/operators';
 
 export class BlockListener {
 	private count = 0;
