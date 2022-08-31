@@ -1,9 +1,15 @@
 import StrategiesJob from '../abi/StrategiesJob.json';
 import { Flashbots } from './flashbots/flashbots';
 import { BlockListener } from './subscriptions/blocks';
-import { getMainnetGasType2Parameters, prepareFirstBundlesForFlashbots, sendAndRetryUntilNotWorkable } from './transactions';
+import {
+	getMainnetGasType2Parameters,
+	createBundlesWithSameTxs,
+	sendAndRetryUntilNotWorkable,
+	populateTransactions,
+} from './transactions';
 import { getNodeUrlWss, getPrivateKey } from './utils';
 import { stopAndRestartWork } from './utils/stopAndRestartWork';
+import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { providers, Wallet, Contract, BigNumber, Overrides } from 'ethers';
 import { mergeMap, timer, filter } from 'rxjs';
 
@@ -36,7 +42,7 @@ let cooldown: BigNumber;
 
 export async function runStrategiesJob(): Promise<void> {
 	if (!flashbots) {
-		flashbots = await Flashbots.init(signer, new Wallet(FLASHBOTS_PK as string), provider, [FLASHBOTS_RPC], false, chainId);
+		flashbots = await Flashbots.init(signer, new Wallet(FLASHBOTS_PK as string), provider, [FLASHBOTS_RPC], true, chainId);
 	}
 	const [strategies, cd]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
 	cooldown = cd;
@@ -97,14 +103,20 @@ function tryToWorkStrategy(strategy: string) {
 				type: 2,
 			};
 
-			const { txs, bundles } = await prepareFirstBundlesForFlashbots({
+			const txs: TransactionRequest[] = await populateTransactions({
+				chainId,
 				contract: job,
-				functionName: 'work',
-				block,
-				futureBlocks: FUTURE_BLOCKS,
-				burstSize: FIRST_BURST_SIZE,
 				functionArgs: [[strategy, trigger, 10]],
+				functionName: 'work',
 				options,
+			});
+
+			const firstBlockOfBatch = block.number + FUTURE_BLOCKS;
+			const bundles = createBundlesWithSameTxs({
+				unsignedTxs: txs,
+				burstSize: FIRST_BURST_SIZE,
+				firstBlockOfBatch,
+				id: strategy,
 			});
 
 			await sendAndRetryUntilNotWorkable({
@@ -115,7 +127,6 @@ function tryToWorkStrategy(strategy: string) {
 				bundles,
 				newBurstSize: RETRY_BURST_SIZE,
 				flashbots,
-				sendThroughStealthRelayer: false,
 				isWorkableCheck: () => job.workable(strategy, trigger),
 			});
 

@@ -2,8 +2,14 @@ import StealthRelayer from '../abi/StealthRelayer.json';
 import TestJob from '../abi/TestJob.json';
 import { Flashbots } from './flashbots/flashbots';
 import { getNewBlocks, stopBlocks } from './subscriptions/blocks';
-import { getMainnetGasType2Parameters, prepareFirstBundlesForFlashbots, sendAndRetryUntilNotWorkable } from './transactions';
+import {
+	getMainnetGasType2Parameters,
+	createBundlesWithDifferentTxs,
+	sendAndRetryUntilNotWorkable,
+	populateTransactions,
+} from './transactions';
 import { getNodeUrlWss, getPrivateKey } from './utils';
+import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { solidityKeccak256 } from 'ethers/lib/utils';
 import { mergeMap, timer } from 'rxjs';
@@ -37,7 +43,7 @@ let flashbots: Flashbots;
 
 export async function runStealthRelayerJob(): Promise<void> {
 	if (!flashbots) {
-		flashbots = await Flashbots.init(signer, new Wallet(FLASHBOTS_PK as string), provider, [FLASHBOTS_RPC], false, chainId);
+		flashbots = await Flashbots.init(signer, new Wallet(FLASHBOTS_PK as string), provider, [FLASHBOTS_RPC], true, chainId);
 	}
 
 	const lastWorkAt = BigNumber.from(await provider.getStorageAt(JOB_ADDRESS, 3));
@@ -79,17 +85,22 @@ export async function runStealthRelayerJob(): Promise<void> {
 				type: 2,
 			};
 
-			const { txs, bundles } = await prepareFirstBundlesForFlashbots({
+			const firstBlockOfBatch = block.number + FUTURE_BLOCKS;
+			const txs: TransactionRequest[] = await populateTransactions({
+				chainId,
 				contract: stealthRelayer,
-				functionName: 'execute',
-				block,
-				futureBlocks: FUTURE_BLOCKS,
-				burstSize: FIRST_BURST_SIZE,
 				functionArgs: [
-					[JOB_ADDRESS, workData, STEALTH_HASH, block.number + FUTURE_BLOCKS],
-					[JOB_ADDRESS, workData, STEALTH_HASH, block.number + FUTURE_BLOCKS + 1],
+					[JOB_ADDRESS, workData, STEALTH_HASH, firstBlockOfBatch],
+					[JOB_ADDRESS, workData, STEALTH_HASH, firstBlockOfBatch + 1],
 				],
+				functionName: 'execute',
 				options,
+			});
+
+			const bundles = createBundlesWithDifferentTxs({
+				unsignedTxs: txs,
+				burstSize: FIRST_BURST_SIZE,
+				firstBlockOfBatch,
 			});
 
 			console.log('SENDING TX...');
@@ -102,8 +113,21 @@ export async function runStealthRelayerJob(): Promise<void> {
 				newBurstSize: RETRY_BURST_SIZE,
 				flashbots,
 				signer,
-				sendThroughStealthRelayer: true,
 				isWorkableCheck: () => job.workable(),
+				regenerateTxs: async (burstSize, firstBlockOfNextBatch) => {
+					const populateTxsPromises = new Array(burstSize).fill(null).map((_, index) => {
+						return stealthRelayer.populateTransaction.execute(
+							JOB_ADDRESS,
+							workData,
+							STEALTH_HASH,
+							firstBlockOfNextBatch + index,
+							{ ...options }
+						);
+					});
+
+					return (await Promise.all(populateTxsPromises)).map((tx) => ({ ...tx, chainId }));
+				},
+				bundleRegenerationMethod: 'createBundlesWithDifferentTxs',
 			});
 
 			console.log('===== Tx SUCCESS =====');

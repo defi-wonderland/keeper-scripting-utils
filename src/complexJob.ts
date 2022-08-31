@@ -1,8 +1,14 @@
 import BasicJob from '../abi/BasicJob.json';
 import { Flashbots } from './flashbots/flashbots';
 import { getNewBlocks, stopBlocks } from './subscriptions/blocks';
-import { getMainnetGasType2Parameters, prepareFirstBundlesForFlashbots, sendAndRetryUntilNotWorkable } from './transactions';
+import {
+	createBundlesWithSameTxs,
+	getMainnetGasType2Parameters,
+	sendAndRetryUntilNotWorkable,
+	populateTransactions,
+} from './transactions';
 import { getNodeUrlWss, getPrivateKey } from './utils';
+import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
 
@@ -41,20 +47,18 @@ export async function runComplexJob(): Promise<void> {
 	const notificationTime = readyTime.sub(secondsBefore);
 	const time = notificationTime.mul(1000).sub(Date.now()).toNumber();
 	let txInProgress: boolean;
-	let counter = 0; // TODO remove
 
 	console.log('started cooldown observable');
 	const sub = timer(time)
 		.pipe(mergeMap(() => getNewBlocks(provider)))
 		.subscribe(async (block) => {
-			counter++;
 			console.log('Job is close to be off cooldown');
 			if (txInProgress) {
 				console.log('TX IN PROGRESS: ', block.number);
 				return;
 			}
 
-			const trigger = true; // counter > 2;  // TODO REMOVE HARDCOD
+			const trigger = true;
 			const isWorkable = await job.complexWorkable(trigger);
 			if (!isWorkable) {
 				console.log('NOT WORKABLE: ', block.number);
@@ -76,14 +80,19 @@ export async function runComplexJob(): Promise<void> {
 				type: 2,
 			};
 
-			const { txs, bundles } = await prepareFirstBundlesForFlashbots({
+			const txs: TransactionRequest[] = await populateTransactions({
+				chainId,
 				contract: job,
-				functionName: 'complexWork',
-				block,
-				futureBlocks: FUTURE_BLOCKS,
-				burstSize: FIRST_BURST_SIZE,
 				functionArgs: [[trigger, 2]],
+				functionName: 'complexWork',
 				options,
+			});
+
+			const firstBlockOfBatch = block.number + FUTURE_BLOCKS;
+			const bundles = createBundlesWithSameTxs({
+				unsignedTxs: txs,
+				burstSize: FIRST_BURST_SIZE,
+				firstBlockOfBatch,
 			});
 
 			console.log('SENDING TX...');
@@ -96,7 +105,6 @@ export async function runComplexJob(): Promise<void> {
 				newBurstSize: RETRY_BURST_SIZE,
 				flashbots,
 				signer,
-				sendThroughStealthRelayer: false,
 				isWorkableCheck: () => job.complexWorkable(trigger),
 			});
 

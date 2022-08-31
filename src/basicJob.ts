@@ -1,8 +1,14 @@
 import BasicJob from '../abi/BasicJob.json';
 import { Flashbots } from './flashbots/flashbots';
 import { getNewBlocks, stopBlocks } from './subscriptions/blocks';
-import { getMainnetGasType2Parameters, prepareFirstBundlesForFlashbots, sendAndRetryUntilNotWorkable } from './transactions';
+import {
+	createBundlesWithSameTxs,
+	getMainnetGasType2Parameters,
+	sendAndRetryUntilNotWorkable,
+	populateTransactions,
+} from './transactions';
 import { getNodeUrlWss, getPrivateKey } from './utils';
+import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, take, timer } from 'rxjs';
 
@@ -65,14 +71,19 @@ export async function runBasicJob(): Promise<void> {
 				type: 2,
 			};
 
-			const { txs, bundles } = await prepareFirstBundlesForFlashbots({
+			const txs: TransactionRequest[] = await populateTransactions({
+				chainId,
 				contract: job,
-				functionName: 'basicWork',
-				block,
-				futureBlocks: FUTURE_BLOCKS,
-				burstSize: FIRST_BURST_SIZE,
 				functionArgs: [[200]],
+				functionName: 'basicWork',
 				options,
+			});
+
+			const firstBlockOfBatch = block.number + FUTURE_BLOCKS;
+			const bundles = createBundlesWithSameTxs({
+				unsignedTxs: txs,
+				burstSize: FIRST_BURST_SIZE,
+				firstBlockOfBatch,
 			});
 
 			console.log('SENDING TX...');
@@ -85,7 +96,6 @@ export async function runBasicJob(): Promise<void> {
 				newBurstSize: RETRY_BURST_SIZE,
 				flashbots,
 				signer,
-				sendThroughStealthRelayer: false,
 				isWorkableCheck: async () => await job.basicWorkable(),
 			});
 

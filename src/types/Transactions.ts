@@ -3,20 +3,7 @@ import { TransactionRequest, TransactionResponse, Block } from '@ethersproject/a
 import { BundleBurstGroup } from '@types';
 import { Contract, providers, Wallet, Overrides } from 'ethers';
 
-export interface PrepareFirstBundlesForFlashbotsProps {
-	contract: Contract;
-	functionName: string;
-	block: Block;
-	futureBlocks: number;
-	burstSize: number;
-	functionArgs: any[];
-	options?: Overrides;
-}
-
-export interface PrepareFirstBundlesForFlashbotsReturnValue {
-	txs: TransactionRequest[];
-	bundles: BundleBurstGroup[];
-}
+type BundleCreationType = 'createBundlesWithSameTxs' | 'createBundlesWithDifferentTxs';
 
 export interface SendAndRetryUntilNotWorkableProps {
 	txs: TransactionRequest[];
@@ -25,9 +12,10 @@ export interface SendAndRetryUntilNotWorkableProps {
 	bundles: BundleBurstGroup[];
 	newBurstSize: number;
 	flashbots: Flashbots;
-	sendThroughStealthRelayer: boolean;
-	isWorkableCheck: () => Promise<boolean>;
 	signer: Wallet;
+	isWorkableCheck: () => Promise<boolean>;
+	regenerateTxs?: (burstSize: number, lastBlockNumberUsed: number) => Promise<TransactionRequest[]>;
+	bundleRegenerationMethod?: BundleCreationType;
 }
 
 export interface PrepareFlashbotBundleForRetryProps {
@@ -38,14 +26,22 @@ export interface PrepareFlashbotBundleForRetryProps {
 	previousBurstSize: number;
 	newBurstSize: number;
 	signer: Wallet;
-	sendThroughStealthRelayer: boolean;
+	regenerateTxs?: (burstSize: number, lastBlockNumberUsed: number) => Promise<TransactionRequest[]>;
+	bundleRegenerationMethod?: BundleCreationType;
+	id?: string;
+}
+
+export interface CreateBundlesWithSameTxProps {
+	unsignedTx: TransactionRequest;
+	burstSize: number;
+	firstBlockOfBatch: number;
 	id?: string;
 }
 
 export interface CreateBundlesProps {
 	unsignedTxs: TransactionRequest[];
 	burstSize: number;
-	targetBlock: number;
+	firstBlockOfBatch: number;
 	id?: string;
 }
 
@@ -53,7 +49,6 @@ export interface PopulateTransactionsProps {
 	contract: Contract;
 	functionName: string;
 	functionArgs: any[][];
-	burstSize: number;
 	chainId: number;
 	options?: Overrides;
 }
