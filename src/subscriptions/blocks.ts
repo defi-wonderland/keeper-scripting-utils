@@ -1,5 +1,6 @@
 import { emitWhenCloseToCooldown } from './cooldown';
 import { Block } from '@ethersproject/abstract-provider';
+import chalk from 'chalk';
 import { BigNumber, providers } from 'ethers';
 import { from, fromEvent, merge, mergeMap, Observable, Subject, Subscription } from 'rxjs';
 import { filter, shareReplay } from 'rxjs/operators';
@@ -10,27 +11,39 @@ export class BlockListener {
 	private subs: Subscription[] = [];
 	constructor(private provider: providers.BaseProvider) {}
 
-	stream(): Observable<Block> {
+	stream(debugId?: string): Observable<Block> {
 		if (this.count++ === 0) {
-			console.log('%c ------ START BLOCK LISTENING -----', 'background: #56b576; color: white');
+			this.provider.getBlock('latest').then((block) => {
+				console.info(`${chalk.bgGray('\nblock arrived:', block.number)}\n`);
+				this.block$.next(block);
+			});
+			console.info(chalk.redBright('\n------ START BLOCK LISTENING -----'));
 			const onBlockNumber$ = fromEvent(this.provider, 'block') as Observable<number>;
 			const sub = onBlockNumber$.pipe(mergeMap((blockNumber) => this.provider.getBlock(blockNumber))).subscribe((block) => {
+				console.info(`${chalk.bgGray('\nblock arrived:', block.number)}\n`);
 				this.block$.next(block);
 			});
 			this.subs.push(sub);
 		}
-		console.log({ count: this.count });
-
-		return merge(from(this.provider.getBlock('latest')), this.block$).pipe(shareReplay(1));
+		if (debugId)
+			console.debug(
+				`\nOpen BlockListener subscriptions count: ${chalk.redBright(this.count)} corresponded to ${chalk.green(debugId)}`
+			);
+		else console.debug('\nOpen BlockListener subscriptions count:', chalk.redBright(this.count));
+		return this.block$;
 	}
 
-	stop(): void {
+	stop(debugId?: string): void {
 		if (--this.count === 0) {
-			console.log('%c ------ STOP BLOCK LISTENING -----', 'background: #56b576; color: white');
+			console.info(chalk.redBright('\n------ STOP BLOCK LISTENING -----'));
 			this.subs.forEach((sub) => sub.unsubscribe());
 			this.provider.removeAllListeners('block');
 		}
-		console.log({ count: this.count });
+		if (debugId)
+			console.debug(
+				`\nOpen BlockListener subscriptions count: ${chalk.redBright(this.count)} corresponded to ${chalk.green(debugId)}`
+			);
+		else console.debug('\nOpen BlockListener subscriptions count:', chalk.redBright(this.count));
 	}
 }
 

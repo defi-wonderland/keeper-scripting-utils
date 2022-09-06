@@ -1,15 +1,16 @@
-import StrategiesJob from '../abi/StrategiesJob.json';
-import { Flashbots } from './flashbots/flashbots';
-import { BlockListener } from './subscriptions/blocks';
+import StrategiesJob from '../../abi/StrategiesJob.json';
+import { Flashbots } from './../flashbots/flashbots';
+import { BlockListener } from './../subscriptions/blocks';
 import {
 	getMainnetGasType2Parameters,
 	createBundlesWithSameTxs,
 	sendAndRetryUntilNotWorkable,
 	populateTransactions,
-} from './transactions';
-import { getNodeUrlWss, getPrivateKey } from './utils';
-import { stopAndRestartWork } from './utils/stopAndRestartWork';
+} from './../transactions';
+import { getNodeUrlWss, getPrivateKey } from './../utils';
+import { stopAndRestartWork } from './../utils/stopAndRestartWork';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
+import { makeid } from '@keep3r-network/cli-utils';
 import { providers, Wallet, Contract, BigNumber, Overrides } from 'ethers';
 import { mergeMap, timer, filter } from 'rxjs';
 
@@ -42,7 +43,7 @@ let cooldown: BigNumber;
 
 export async function runStrategiesJob(): Promise<void> {
 	if (!flashbots) {
-		flashbots = await Flashbots.init(signer, new Wallet(FLASHBOTS_PK as string), provider, [FLASHBOTS_RPC], true, chainId);
+		flashbots = await Flashbots.init(signer, new Wallet(FLASHBOTS_PK as string), provider, [FLASHBOTS_RPC], false, chainId);
 	}
 	const [strategies, cd]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
 	cooldown = cd;
@@ -58,7 +59,7 @@ export async function runStrategiesJob(): Promise<void> {
 }
 
 function tryToWorkStrategy(strategy: string) {
-	console.log('Start Working on strategy: ', strategy);
+	console.log('\nStart Working on strategy: ', strategy);
 
 	const readyTime = lastWorkAt[strategy].add(cooldown);
 	const notificationTime = readyTime;
@@ -66,26 +67,29 @@ function tryToWorkStrategy(strategy: string) {
 
 	const sub = timer(time)
 		.pipe(
-			mergeMap(() => blockListener.stream()),
+			mergeMap(() => blockListener.stream(strategy)),
 			filter(() => {
 				return !strategyWorkInProgress[strategy];
 			})
 		)
 		.subscribe(async (block) => {
-			console.log('block: ', block.number);
+			console.log('\nblock: ', block.number);
 
-			console.log('Strategy cooldown completed: ', strategy);
+			console.log('\nStrategy cooldown completed: ', strategy);
 
 			const trigger = true;
 			const isWorkable = await job.workable(strategy, trigger);
 			if (!isWorkable) {
 				console.log('NOT WORKABLE: ', block.number, ' strategy: ', strategy);
-				lastWorkAt[strategy] = await job.lastWorkAt(strategy);
-				strategyWorkInProgress[strategy] = false;
-				stopAndRestartWork(strategy, blockListener, sub, tryToWorkStrategy);
+				const tempLastWorkAt: BigNumber = await job.lastWorkAt(strategy);
+				if (!tempLastWorkAt.eq(lastWorkAt[strategy])) {
+					lastWorkAt[strategy] = tempLastWorkAt;
+					strategyWorkInProgress[strategy] = false;
+					stopAndRestartWork(strategy, blockListener, sub, tryToWorkStrategy);
+				}
 				return;
 			}
-			console.log('Strategy is workable: ', strategy);
+			console.log('\nStrategy is workable: ', strategy);
 
 			strategyWorkInProgress[strategy] = true;
 
@@ -118,8 +122,8 @@ function tryToWorkStrategy(strategy: string) {
 				firstBlockOfBatch,
 				id: strategy,
 			});
-
-			await sendAndRetryUntilNotWorkable({
+			const dynamicDebugId = makeid(5);
+			const result = await sendAndRetryUntilNotWorkable({
 				txs,
 				provider,
 				priorityFee: PRIORITY_FEE,
@@ -128,9 +132,11 @@ function tryToWorkStrategy(strategy: string) {
 				newBurstSize: RETRY_BURST_SIZE,
 				flashbots,
 				isWorkableCheck: () => job.workable(strategy, trigger),
+				staticDebugId: strategy,
+				dynamicDebugId,
 			});
 
-			console.log('===== Tx SUCCESS ===== ', strategy);
+			if (result) console.log('===== Tx SUCCESS ===== ', strategy);
 			lastWorkAt[strategy] = await job.lastWorkAt(strategy);
 			strategyWorkInProgress[strategy] = false;
 			stopAndRestartWork(strategy, blockListener, sub, tryToWorkStrategy);

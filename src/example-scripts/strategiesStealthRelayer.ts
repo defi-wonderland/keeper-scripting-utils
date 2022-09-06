@@ -1,17 +1,17 @@
-import StealthRelayer from '../abi/StealthRelayer.json';
-import TestJob from '../abi/TestJob.json';
-import { Flashbots } from './flashbots/flashbots';
-import { getNewBlocks, stopBlocks } from './subscriptions/blocks';
+import StealthRelayer from '../../abi/StealthRelayerGoerli.json';
+import TestJob from '../../abi/TestJob.json';
+import { Flashbots } from './../flashbots/flashbots';
+import { getNewBlocks, stopBlocks } from './../subscriptions/blocks';
 import {
 	getMainnetGasType2Parameters,
 	createBundlesWithDifferentTxs,
 	sendAndRetryUntilNotWorkable,
 	populateTransactions,
-} from './transactions';
-import { getNodeUrlWss, getPrivateKey } from './utils';
+} from './../transactions';
+import { getNodeUrlWss, getPrivateKey } from './../utils';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
+import { getStealthHash } from '@keep3r-network/cli-utils';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
-import { solidityKeccak256 } from 'ethers/lib/utils';
 import { mergeMap, timer } from 'rxjs';
 
 const dotenv = require('dotenv');
@@ -143,19 +143,4 @@ if (!process.env.TEST_MODE) {
 	(async () => {
 		runStealthRelayerJob();
 	})();
-}
-
-// TODO: import from keep3r utils
-export function getStealthHash(): string {
-	return solidityKeccak256(['string'], [makeid(32)]);
-}
-
-export function makeid(length: number): string {
-	let result = '';
-	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	const charactersLength = characters.length;
-	for (let i = 0; i < length; i++) {
-		result += characters.charAt(Math.floor(Math.random() * charactersLength));
-	}
-	return result;
 }

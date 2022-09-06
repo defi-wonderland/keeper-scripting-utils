@@ -1,9 +1,9 @@
-import StrategiesJob from '../abi/StrategiesJob.json';
-import { GasService } from './services/gas.service';
-import { BlockListener } from './subscriptions/blocks';
-import { sendTx } from './transactions';
-import { getNodeUrlWss, getPrivateKey, toGwei } from './utils';
-import { stopAndRestartWork } from './utils/stopAndRestartWork';
+import StrategiesJob from '../../abi/StrategiesJob.json';
+import { GasService } from './../services/gas.service';
+import { BlockListener } from './../subscriptions/blocks';
+import { sendTx } from './../transactions';
+import { getNodeUrlWss, getPrivateKey, toGwei } from './../utils';
+import { stopAndRestartWork } from './../utils/stopAndRestartWork';
 import { providers, Wallet, Contract, BigNumber, Overrides } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
 

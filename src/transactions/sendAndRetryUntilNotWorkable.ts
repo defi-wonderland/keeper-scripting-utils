@@ -1,5 +1,6 @@
 import { prepareFlashbotBundleForRetry, sendBundlesToFlashbots } from './';
-import { SendAndRetryUntilNotWorkableProps } from '@types';
+import { makeid } from '@keep3r-network/cli-utils';
+import { BundleBurstGroup, SendAndRetryUntilNotWorkableProps } from '@types';
 
 /**
  * @notice Sends new bundles with the same transaction to different targetBlocks until the job is successfully worked, or another keeper works it.
@@ -20,15 +21,15 @@ import { SendAndRetryUntilNotWorkableProps } from '@types';
  */
 
 export async function sendAndRetryUntilNotWorkable(props: SendAndRetryUntilNotWorkableProps): Promise<boolean> {
-	const { bundles, flashbots, isWorkableCheck } = props;
+	const { bundles, flashbots, isWorkableCheck, staticDebugId, dynamicDebugId } = props;
 
-	const firstBundleIncluded = await sendBundlesToFlashbots(bundles, flashbots);
-	if (firstBundleIncluded) return true;
 	const jobIsStillWorkable = await isWorkableCheck();
 	if (!jobIsStillWorkable) {
 		console.log('Job is not workable');
 		return false;
 	}
+	const firstBundleIncluded = await sendBundlesToFlashbots(bundles, flashbots, staticDebugId, dynamicDebugId);
+	if (firstBundleIncluded) return true;
 
 	const retryBundle = await prepareFlashbotBundleForRetry({
 		...props,
@@ -36,5 +37,16 @@ export async function sendAndRetryUntilNotWorkable(props: SendAndRetryUntilNotWo
 		previousBurstSize: bundles.length,
 		id: bundles[0].id,
 	});
-	return sendAndRetryUntilNotWorkable({ ...props, bundles: retryBundle });
+
+	if (!retryBundle) {
+		return false;
+	}
+
+	const recalculatedDynamicId = makeid(5);
+
+	return sendAndRetryUntilNotWorkable({
+		...props,
+		bundles: retryBundle as BundleBurstGroup[],
+		dynamicDebugId: recalculatedDynamicId,
+	});
 }

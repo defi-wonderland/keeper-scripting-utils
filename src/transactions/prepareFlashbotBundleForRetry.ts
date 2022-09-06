@@ -3,7 +3,9 @@ import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { BundleBurstGroup, PrepareFlashbotBundleForRetryProps } from '@types';
 
 // TODO take off id argument from createBundle, both prepeare functions, sendRetry and remove from BundleBurstGroup type
-export async function prepareFlashbotBundleForRetry(props: PrepareFlashbotBundleForRetryProps): Promise<BundleBurstGroup[]> {
+export async function prepareFlashbotBundleForRetry(
+	props: PrepareFlashbotBundleForRetryProps
+): Promise<BundleBurstGroup[] | boolean> {
 	const {
 		txs,
 		provider,
@@ -17,6 +19,7 @@ export async function prepareFlashbotBundleForRetry(props: PrepareFlashbotBundle
 		bundleRegenerationMethod = 'createBundlesWithSameTxs',
 	} = props;
 	const firstBundleBlock = await provider.getBlock(notIncludedBlock);
+	if (!firstBundleBlock) return false;
 	const firstBlockOfNextBatch = notIncludedBlock + previousBurstSize;
 	const blocksAhead = previousBurstSize + newBurstSize - 1;
 	const latestNonce = await provider.getTransactionCount(signer.address);

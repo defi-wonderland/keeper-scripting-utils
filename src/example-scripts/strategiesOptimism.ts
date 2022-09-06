@@ -1,8 +1,8 @@
-import StrategiesJob from '../abi/StrategiesJob.json';
-import { BlockListener } from './subscriptions/blocks';
-import { sendTx } from './transactions';
-import { getNodeUrlWss, getPrivateKey } from './utils';
-import { stopAndRestartWork } from './utils/stopAndRestartWork';
+import StrategiesJob from '../../abi/StrategiesJob.json';
+import { BlockListener } from './../subscriptions/blocks';
+import { sendTx } from './../transactions';
+import { getNodeUrlWss, getPrivateKey } from './../utils';
+import { stopAndRestartWork } from './../utils/stopAndRestartWork';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
 

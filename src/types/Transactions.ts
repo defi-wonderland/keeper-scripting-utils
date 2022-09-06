@@ -16,6 +16,8 @@ export interface SendAndRetryUntilNotWorkableProps {
 	isWorkableCheck: () => Promise<boolean>;
 	regenerateTxs?: (burstSize: number, lastBlockNumberUsed: number) => Promise<TransactionRequest[]>;
 	bundleRegenerationMethod?: BundleCreationType;
+	staticDebugId?: string;
+	dynamicDebugId?: string;
 }
 
 export interface PrepareFlashbotBundleForRetryProps {
