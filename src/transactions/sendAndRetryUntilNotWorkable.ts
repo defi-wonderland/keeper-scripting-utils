@@ -3,20 +3,23 @@ import { makeid } from '@keep3r-network/cli-utils';
 import { BundleBurstGroup, SendAndRetryUntilNotWorkableProps } from '@types';
 
 /**
- * @notice Sends new bundles with the same transaction to different targetBlocks until the job is successfully worked, or another keeper works it.
+ * @notice Sends new bundles to different targetBlocks until the job is successfully worked, or another keeper works it.
  *
- * @dev If out last bundle was sent to block 100, 101, 102, and 100 was not included, a new bundle will be sent to blocks 103 + newBurstSize
- *      if the job is still workable. This process will continue until the job is worked.
+ * @dev If the last bundle was sent to block 100, 101, 102, and 100 was not included, a new bundle will be sent to blocks 103 + newBurstSize
+ *      if the job is still workable.
  *
- * @param tx The transaction to be retried.
- * @param provider A provider used to fetch the block after the target block of the first bundle
- * @param priorityFee The priority fee to be paid to the miner
- * @param bundle The bundles previously sent to flashbots
- * @param newBurstSize How many consecutive blocks after our last bundle's target block we want to send the new bundle to
- * @param flashbots Flashbots instance
- * @param job The instance of the job Contract to be worked. This will be used to check if it's still workable.
- * @param functionName The function name to call in order to check if the job is still workable
- * @param functionArgs The function args that function takes, if any.
+ * @param txs             The transactions to be retried if nothing is provided in the regenerateTxs parameter.
+ * @param provider        A provider. It will be used to fetch the first block in which each of our bundle batches were not included.
+ * @param priorityFee     The priority fee to be paid to the miner.
+ * @param bundles         The batches of bundles to send to flashbots.
+ * @param newBurstSize    Amount of consecutive blocks we want to send the transactions to try to work the job.
+ * @param flashbots       An instance of Flashbots.
+ * @param signer          A signer.
+ * @param isWorkableCheck A callback to the function that checks the workability of the job we are trying to work.
+ * @param staticDebugId   Optional static id to help with debugging. Every bundle will share this id.
+ * @param dynamicDebugId  Optional dynamic id to help with debugging. Every bundle will have a different dynamic id. This dynamic id will
+ * 						  be recalculated every time a bundle is created.
+ *
  * @returns A boolean to know whether the bundle was included or not
  */
 
@@ -41,7 +44,7 @@ export async function sendAndRetryUntilNotWorkable(props: SendAndRetryUntilNotWo
 	if (!retryBundle) {
 		return false;
 	}
-
+	//TODO: do this dynamically
 	const recalculatedDynamicId = makeid(5);
 
 	return sendAndRetryUntilNotWorkable({
