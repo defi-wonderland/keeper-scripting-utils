@@ -1,4 +1,3 @@
-import { emitWhenCloseToCooldown } from './cooldown';
 import { Block } from '@ethersproject/abstract-provider';
 import chalk from 'chalk';
 import { BigNumber, providers } from 'ethers';
@@ -66,16 +65,6 @@ export function emitWhenCloseToBlock(
 	const block$ = getNewBlocks(provider);
 	const targetBlockBefore = targetBlock - blocksBefore;
 	return block$.pipe(filter((block) => block.number >= targetBlockBefore));
-}
-
-export function emitWhenCloseToWorkable(
-	provider: providers.BaseProvider,
-	lastWorkAt: BigNumber,
-	workCooldown: BigNumber,
-	emitSecondsBefore: number
-): Observable<Block> {
-	const block$ = getNewBlocks(provider);
-	return emitWhenCloseToCooldown(lastWorkAt, workCooldown, emitSecondsBefore).pipe(mergeMap(() => block$));
 }
 
 export function stopBlocks(provider: providers.BaseProvider): void {
