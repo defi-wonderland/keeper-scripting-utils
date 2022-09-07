@@ -70,13 +70,17 @@ export async function runComplexJob(): Promise<void> {
 			const blocksAhead = FUTURE_BLOCKS + FIRST_BURST_SIZE;
 
 			const currentNonce = await provider.getTransactionCount(signer.address);
-			const { priorityFee, maxFeePerGas } = getMainnetGasType2Parameters({ block, blocksAhead, priorityFee: PRIORITY_FEE });
+			const { priorityFeeInGwei, maxFeePerGas } = getMainnetGasType2Parameters({
+				block,
+				blocksAhead,
+				priorityFeeInWei: PRIORITY_FEE,
+			});
 
 			const options = {
 				gasLimit: 10_000_000,
 				nonce: currentNonce,
 				maxFeePerGas,
-				maxPriorityFeePerGas: priorityFee,
+				maxPriorityFeePerGas: priorityFeeInGwei,
 				type: 2,
 			};
 
@@ -100,7 +104,7 @@ export async function runComplexJob(): Promise<void> {
 			await sendAndRetryUntilNotWorkable({
 				txs,
 				provider,
-				priorityFee: PRIORITY_FEE,
+				priorityFeeInWei: PRIORITY_FEE,
 				bundles,
 				newBurstSize: RETRY_BURST_SIZE,
 				flashbots,

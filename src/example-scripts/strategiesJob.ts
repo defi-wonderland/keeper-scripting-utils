@@ -97,13 +97,17 @@ function tryToWorkStrategy(strategy: string) {
 
 			const blocksAhead = FUTURE_BLOCKS + FIRST_BURST_SIZE;
 
-			const { priorityFee, maxFeePerGas } = getMainnetGasType2Parameters({ block, blocksAhead, priorityFee: PRIORITY_FEE });
+			const { priorityFeeInGwei, maxFeePerGas } = getMainnetGasType2Parameters({
+				block,
+				blocksAhead,
+				priorityFeeInWei: PRIORITY_FEE,
+			});
 
 			const options: Overrides = {
 				gasLimit: 10_000_000,
 				nonce: currentNonce,
 				maxFeePerGas,
-				maxPriorityFeePerGas: priorityFee,
+				maxPriorityFeePerGas: priorityFeeInGwei,
 				type: 2,
 			};
 
@@ -126,7 +130,7 @@ function tryToWorkStrategy(strategy: string) {
 			const result = await sendAndRetryUntilNotWorkable({
 				txs,
 				provider,
-				priorityFee: PRIORITY_FEE,
+				priorityFeeInWei: PRIORITY_FEE,
 				signer,
 				bundles,
 				newBurstSize: RETRY_BURST_SIZE,

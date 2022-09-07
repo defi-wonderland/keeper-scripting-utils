@@ -5,10 +5,15 @@ import { Contract, providers, Wallet, Overrides } from 'ethers';
 
 type BundleCreationType = 'createBundlesWithSameTxs' | 'createBundlesWithDifferentTxs';
 
+export interface DynamicPriorityFeeReturnValue {
+	newPriorityFeeInWei: number;
+	cancelBatchAndRestart: boolean;
+}
+
 export interface SendAndRetryUntilNotWorkableProps {
 	txs: TransactionRequest[];
 	provider: providers.BaseProvider;
-	priorityFee: number;
+	priorityFeeInWei: number;
 	bundles: BundleBurstGroup[];
 	newBurstSize: number;
 	flashbots: Flashbots;
@@ -16,6 +21,11 @@ export interface SendAndRetryUntilNotWorkableProps {
 	isWorkableCheck: () => Promise<boolean>;
 	regenerateTxs?: (burstSize: number, lastBlockNumberUsed: number) => Promise<TransactionRequest[]>;
 	bundleRegenerationMethod?: BundleCreationType;
+	recalculatePriorityFeeInWei?: (
+		updatedBundles: BundleBurstGroup[],
+		notIncludedBlockOfPreviousBundle: Block,
+		firstBlockOfNextBatch: number
+	) => Promise<DynamicPriorityFeeReturnValue>;
 	staticDebugId?: string;
 	dynamicDebugId?: string;
 }
@@ -24,12 +34,17 @@ export interface PrepareFlashbotBundleForRetryProps {
 	txs: TransactionRequest[];
 	provider: providers.BaseProvider;
 	notIncludedBlock: number;
-	priorityFee: number;
+	priorityFeeInWei: number;
 	previousBurstSize: number;
 	newBurstSize: number;
 	signer: Wallet;
 	regenerateTxs?: (burstSize: number, lastBlockNumberUsed: number) => Promise<TransactionRequest[]>;
 	bundleRegenerationMethod?: BundleCreationType;
+	recalculatePriorityFeeInWei?: (
+		updatedBundles: BundleBurstGroup[],
+		notIncludedBlockOfPreviousBundle: Block,
+		firstBlockOfNextBatch: number
+	) => Promise<DynamicPriorityFeeReturnValue>;
 	id?: string;
 }
 
@@ -68,6 +83,6 @@ export interface FormatBundlesTxsToType2Props extends FormatTxsBase {
 
 export interface FormatTxsBase {
 	block: Block;
-	priorityFee: number;
+	priorityFeeInWei: number;
 	blocksAhead: number;
 }

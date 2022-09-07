@@ -98,11 +98,15 @@ function tryToWorkStrategy(strategy: string) {
 			try {
 				if (txInProgress) return;
 				txInProgress = true;
-				const { maxFeePerGas, priorityFee } = getMainnetGasType2Parameters({ block, blocksAhead: 0, priorityFee: PRIORITY_FEE });
+				const { maxFeePerGas, priorityFeeInGwei } = getMainnetGasType2Parameters({
+					block,
+					blocksAhead: 0,
+					priorityFeeInWei: PRIORITY_FEE,
+				});
 				const options: Overrides = {
 					gasLimit: 10_000_000,
 					maxFeePerGas,
-					maxPriorityFeePerGas: priorityFee,
+					maxPriorityFeePerGas: priorityFeeInGwei,
 					type: 2,
 				};
 
