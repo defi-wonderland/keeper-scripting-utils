@@ -108,7 +108,7 @@ export class Flashbots {
 	 * @dev
 	 * If simulations are enabled, the Flashbots provider should be first in the array of private relayers.
 	 *
-	 * @param provider - 	 	Network provider.
+	 * @param provider - 	 	Private relayer provider instance.
 	 * @param bundle - 	 		The bundle that should be simulated.
 	 * @param targetBlock - The block number where the bundle should be simulated.
 	 *
@@ -148,7 +148,7 @@ export class Flashbots {
 	 * Will create an array of sentBundles (inclusions) promises and wait for all of them to be resolved. After that it will
 	 * check if any of the responses was true which means the bundle was included in one of the private relayers.
 	 *
-	 * @param provider - 	 		 Network provider.
+	 * @param provider - 	 		 Private relayer provider instance.
 	 * @param bundle - 	 			 The bundle that should be simulated.
 	 * @param targetBlock - 	 The block number where the bundle should be included and mined.
 	 * @param staticDebugId -  Optional static id to help with debugging. Every bundle will share this id.
@@ -180,7 +180,7 @@ export class Flashbots {
 	 * Will send the bundle to the relayer provider and wait for its resolution. Depending on the type of resolution
 	 * it will return if the bundle was included or not.
 	 *
-	 * @param provider - 	 		 Network provider.
+	 * @param provider - 	 		 Private relayer provider instance.
 	 * @param bundle - 	 			 The bundle that should be simulated.
 	 * @param targetBlock - 	 The block number where the bundle should be included and mined.
 	 * @param staticDebugId -  Optional static id to help with debugging. Every bundle will share this id.
