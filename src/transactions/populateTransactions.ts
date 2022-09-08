@@ -12,6 +12,7 @@ import { PopulateTransactionsProps } from '@types';
  * 					   For example: if we were to send [[arg1, arg2], [arg3, arg4]] as functionArgs, the resulting transactions would be:
  * 					                [tx1[arg1, arg2], tx2[arg3, arg4]]
  * @param chainId      The chainId of the network to which we will be sending our bundles.
+ * @param options      Optional parameter. It includes all optional properties to add to a transaction. See ethers Overrides type.
  *
  * @return Array of populated transactions.
  */
