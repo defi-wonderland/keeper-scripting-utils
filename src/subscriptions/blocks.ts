@@ -5,17 +5,17 @@ import { from, fromEvent, merge, mergeMap, Observable, Subject, Subscription } f
 import { shareReplay } from 'rxjs/operators';
 
 /**
- * Class in charge of managing the fetching of blocks.
+ * Class in charge of managing the fetching of blocks and how they are provided acoss the app.
  *
  */
 export class BlockListener {
 	// Amount of live subscriptions to block$ observable.
 	private count = 0;
 
-	// Observable in charge of emiting and providing new Blocks.
+	// Observable in charge of emitting and providing new Blocks.
 	private block$ = new Subject<Block>();
 
-	// Array of generated interal subscriptions. Used mainly to be able to unsubscribe from them when needed.
+	// Array of generated internal subscriptions. Used mainly to be able to unsubscribe from them when needed.
 	private subs: Subscription[] = [];
 
 	/**
@@ -61,7 +61,7 @@ export class BlockListener {
 	}
 
 	/**
-	 * Stops block fetching and remove all the interal subscriptions to blockNumber observable.
+	 * Stops block fetching and remove all the internal subscriptions to blockNumber observable.
 	 *
 	 * @dev
 	 * This will only stop block fetching and subscription to blockNumber IF the amount of subscriptions to block$ observable
@@ -91,7 +91,7 @@ export class BlockListener {
  * It combines two different methods to fetch new blocks:
  * - One that fetches the current block just once when this function is called.
  * - One that starts listening for new blocks until stopped. When started this method will wait til next new block
- * 	 to start emiting.
+ * 	 to start emitting.
  * Important to notice that this method will emit the current block when being called and also start listening for
  * new incoming blocks.
  *
@@ -119,7 +119,7 @@ function blockListener(provider: providers.BaseProvider): Observable<Block> {
 }
 
 /**
- * Removes block listener on the provider.
+ * Stops the block listener from the provide.
  *
  * @param provider - JsonRpc provider to that has the methods needed to fetch and listen for new blocks.
  */
