@@ -1,6 +1,6 @@
 import BasicJob from '../../abi/BasicJob.json';
 import { Flashbots } from './../flashbots/flashbots';
-import { getNewBlocks, stopBlocks } from './../subscriptions/blocks';
+import { BlockListener } from './../subscriptions/blocks';
 import {
 	createBundlesWithSameTxs,
 	getMainnetGasType2Parameters,
@@ -19,6 +19,7 @@ const network = 'goerli';
 const chainId = 5;
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
+const blockListener = new BlockListener(provider);
 const JOB_ADDRESS = '0x4C8DB41095cD6fb755466463F0C6B2Ab9C826804';
 const PK = getPrivateKey(network);
 const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
@@ -50,7 +51,7 @@ export async function runComplexJob(): Promise<void> {
 
 	console.log('started cooldown observable');
 	const sub = timer(time)
-		.pipe(mergeMap(() => getNewBlocks(provider)))
+		.pipe(mergeMap(() => blockListener.stream()))
 		.subscribe(async (block) => {
 			console.log('Job is close to be off cooldown');
 			if (txInProgress) {
@@ -115,7 +116,7 @@ export async function runComplexJob(): Promise<void> {
 			console.log('===== Tx SUCCESS =====');
 
 			txInProgress = false;
-			stopBlocks(provider);
+			blockListener.stop();
 			sub.unsubscribe();
 			runComplexJob();
 		});

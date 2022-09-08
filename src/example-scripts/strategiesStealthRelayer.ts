@@ -1,7 +1,7 @@
 import StealthRelayer from '../../abi/StealthRelayerGoerli.json';
 import TestJob from '../../abi/TestJob.json';
 import { Flashbots } from './../flashbots/flashbots';
-import { getNewBlocks, stopBlocks } from './../subscriptions/blocks';
+import { BlockListener } from './../subscriptions/blocks';
 import {
 	getMainnetGasType2Parameters,
 	createBundlesWithDifferentTxs,
@@ -21,6 +21,7 @@ const network = 'goerli';
 const chainId = 5;
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
+const blockListener = new BlockListener(provider);
 const JOB_ADDRESS = '0x9DC52d978290f13b73692C5AeA21B4C8954e909A';
 const PK = getPrivateKey(network);
 const signer = new Wallet(PK, provider);
@@ -56,7 +57,7 @@ export async function runStealthRelayerJob(): Promise<void> {
 
 	console.log('started cooldown observable');
 	const sub = timer(time)
-		.pipe(mergeMap(() => getNewBlocks(provider)))
+		.pipe(mergeMap(() => blockListener.stream()))
 		.subscribe(async (block) => {
 			console.log('Job is close to be off cooldown');
 			if (txInProgress) {
@@ -137,7 +138,7 @@ export async function runStealthRelayerJob(): Promise<void> {
 			console.log('===== Tx SUCCESS =====');
 
 			txInProgress = false;
-			stopBlocks(provider);
+			blockListener.stop();
 			sub.unsubscribe();
 			runStealthRelayerJob();
 		});

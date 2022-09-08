@@ -1,6 +1,5 @@
 import BasicJob from '../../abi/BasicJob.json';
 import { Flashbots } from '../flashbots/flashbots';
-import { getNewBlocks, stopBlocks } from '../subscriptions/blocks';
 import {
 	createBundlesWithSameTxs,
 	getMainnetGasType2Parameters,
@@ -8,6 +7,7 @@ import {
 	populateTransactions,
 } from '../transactions';
 import { getNodeUrlWss, getPrivateKey } from '../utils';
+import { BlockListener } from './../subscriptions/blocks';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, take, timer } from 'rxjs';
@@ -19,6 +19,7 @@ const network = 'goerli';
 const chainId = 5;
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
+const blockListener = new BlockListener(provider);
 const JOB_ADDRESS = '0x4C8DB41095cD6fb755466463F0C6B2Ab9C826804';
 const PK = getPrivateKey(network);
 const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
@@ -51,10 +52,11 @@ export async function runBasicJob(): Promise<void> {
 	console.log('started cooldown observable');
 	const sub = timer(time)
 		.pipe(
-			mergeMap(() => getNewBlocks(provider)),
+			mergeMap(() => blockListener.stream()),
 			take(1)
 		)
 		.subscribe(async (block) => {
+			blockListener.stop(); // since it has take(1) we can stop listening as soon as subscribtion enters.
 			console.log('enter subscribe');
 			console.log('block in main ', block.number);
 			console.log('Job is close to be off cooldown');
@@ -105,7 +107,6 @@ export async function runBasicJob(): Promise<void> {
 
 			console.log('===== Tx SUCCESS =====');
 
-			stopBlocks(provider);
 			sub.unsubscribe();
 			runBasicJob();
 		});

@@ -1,8 +1,7 @@
 import { Block } from '@ethersproject/abstract-provider';
 import chalk from 'chalk';
 import { providers } from 'ethers';
-import { from, fromEvent, merge, mergeMap, Observable, Subject, Subscription } from 'rxjs';
-import { shareReplay } from 'rxjs/operators';
+import { fromEvent, mergeMap, Observable, Subject, Subscription } from 'rxjs';
 
 /**
  * Class in charge of managing the fetching of blocks and how they are provided acoss the app.
@@ -82,49 +81,4 @@ export class BlockListener {
 			);
 		else console.debug('\nOpen BlockListener subscriptions count:', chalk.redBright(this.count));
 	}
-}
-
-/**
- * This function is able to provide a listener for current and new incoming blocks with all their data.
- *
- * @dev
- * It combines two different methods to fetch new blocks:
- * - One that fetches the current block just once when this function is called.
- * - One that starts listening for new blocks until stopped. When started this method will wait til next new block
- * 	 to start emitting.
- * Important to notice that this method will emit the current block when being called and also start listening for
- * new incoming blocks.
- *
- * @param provider - JsonRpc provider that has the methods needed to fetch and listen for new blocks.
- */
-export function getNewBlocks(provider: providers.BaseProvider): Observable<Block> {
-	console.log('start get new blocks');
-	return merge(from(provider.getBlock('latest')), blockListener(provider)).pipe(shareReplay(1));
-}
-
-/**
- * This function is able to provide a listener for new incoming blocks with all their data.
- *
- * @dev
- * It hooks to the 'block' event of the provider that returns just the number of the new block, to then use
- * provider.getBlock(blockNumber) method to fetch all the data of the block.
- * Important to notice that this method does not emit the current block when its called. First emition will be
- * the next new block received after being called.
- *
- * @param provider - JsonRpc provider that has the methods needed to fetch and listen for new blocks.
- */
-function blockListener(provider: providers.BaseProvider): Observable<Block> {
-	const onBlock$ = fromEvent(provider, 'block') as Observable<number>;
-	return onBlock$.pipe(mergeMap((block) => provider.getBlock(block)));
-}
-
-/**
- * Stops the block listener from the provide.
- *
- * @param provider - JsonRpc provider to that has the methods needed to fetch and listen for new blocks.
- */
-export function stopBlocks(provider: providers.BaseProvider): void {
-	console.log('------ STOP LISTENING -----');
-
-	provider.removeAllListeners('block');
 }
