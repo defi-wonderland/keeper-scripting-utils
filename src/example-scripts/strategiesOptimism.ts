@@ -29,6 +29,13 @@ const options = {
 let txInProgress = false;
 let cooldown: BigNumber;
 
+/*
+	NOTICE: This job is identical to the strategiesPolygon only that this is executed on Optimism.
+			Refer to strategiesPolygon for very similar documented code.
+			It's worth mentioning that OPTIMISM has some quirks worth studying about, so this script
+			may behave in unexpected ways.
+*/
+
 export async function runStrategiesJob(): Promise<void> {
 	const [strategies, cd]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
 	cooldown = cd;
@@ -38,7 +45,7 @@ export async function runStrategiesJob(): Promise<void> {
 		lastWorkAt[strategy] = allLastWorksAt[i];
 	});
 
-	strategies.slice(0, 1).forEach((strategy) => {
+	strategies.forEach((strategy) => {
 		tryToWorkStrategy(strategy);
 	});
 }

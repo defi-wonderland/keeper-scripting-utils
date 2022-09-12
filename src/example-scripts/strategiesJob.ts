@@ -17,6 +17,15 @@ import { mergeMap, timer, filter } from 'rxjs';
 const dotenv = require('dotenv');
 dotenv.config();
 
+/*
+	Note: This job is a simplified version of harvest-v2-keep3r-v2 script. It uses strategies, but doesn't add the complexity of
+		  using the StealthRelayer contract. 
+*/
+
+/*==============================================================/*
+		                      SETUP			
+/*==============================================================*/
+
 const network = 'goerli';
 const chainId = 5;
 const nodeUrl = getNodeUrlWss(network);

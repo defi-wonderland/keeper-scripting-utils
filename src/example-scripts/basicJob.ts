@@ -36,6 +36,11 @@ const PRIORITY_FEE = 10; // Dehardcode
 
 let flashbots: Flashbots;
 
+/*
+	NOTICE: This job is identical to the complexJob script with the only difference this script doens't use a variable cooldown. 
+	Refer to complexJob for very similar documented code. 
+*/
+
 export async function runBasicJob(): Promise<void> {
 	if (!flashbots) {
 		flashbots = await Flashbots.init(signer, new Wallet(FLASHBOTS_PK as string), provider, [FLASHBOTS_RPC], false, chainId);

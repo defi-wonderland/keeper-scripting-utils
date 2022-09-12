@@ -27,6 +27,11 @@ const targetBlocks: Record<string, number> = {};
 let txInProgress = false;
 let cooldown: BigNumber;
 
+/*
+	NOTICE: This job is identical to the strategiesPolygon only that this is executed on goerli.
+			Refer to strategiesPolygon for very similar documented code.
+*/
+
 export async function runStrategiesJob(): Promise<void> {
 	const [strategies, cd]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
 	cooldown = cd;

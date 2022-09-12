@@ -47,6 +47,11 @@ let flashbots: Flashbots;
 
 let blocksWindow: number;
 
+/*
+	NOTICE: This job is identical to the upkeep-keep3r script with the only difference this script runs on goerli using
+	custom contracts that intend to simulate needed functionality of the real contracts in mainnet.
+	Refer to upkeep-keep3r for very similar documented code.
+*/
 export async function runUpkeepJob(): Promise<void> {
 	console.log('Start runUpkeepJob()');
 	if (!flashbots) {

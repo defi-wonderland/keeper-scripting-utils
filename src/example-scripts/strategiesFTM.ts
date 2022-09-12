@@ -29,6 +29,11 @@ const options = {
 let txInProgress = false;
 let cooldown: BigNumber;
 
+/*
+	NOTICE: This job is identical to the strategiesPolygon script with the only difference that this is
+	executed on FTM and FTM doesn't have EIP-1559. Refer to strategiesPolygon for very similar documented code. 
+*/
+
 export async function runStrategiesJob(): Promise<void> {
 	const [strategies, cd]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
 	cooldown = cd;

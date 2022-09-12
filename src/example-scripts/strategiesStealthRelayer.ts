@@ -17,6 +17,11 @@ import { mergeMap, timer } from 'rxjs';
 const dotenv = require('dotenv');
 dotenv.config();
 
+/*
+	Note: This job is a simplified version of harvest-v2-keep3r-v2 script. Refer to that script for
+		  very similar documented code. 
+*/
+
 const network = 'goerli';
 const chainId = 5;
 const nodeUrl = getNodeUrlWss(network);
