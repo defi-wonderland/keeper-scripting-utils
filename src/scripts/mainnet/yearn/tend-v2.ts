@@ -1,4 +1,4 @@
-import TendV2KeeperV2ABI from '../../../../abi/TendV2KeeperV2ABI.json';
+import TendV2ABI from '../../../../abi/TendV2.json';
 import { Flashbots } from '../../../flashbots/flashbots';
 import { BlockListener } from '../../../subscriptions/blocks';
 import {
@@ -30,13 +30,13 @@ const chainId: ChainId = NETWORKS_IDS_BY_NAME[network];
 const FLASHBOTS_RPC: string = FLASHBOTS_RPC_BY_NETWORK[network];
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
-const JOB_ADDRESS = '0xcd7f72f12c4b87dabd31d3aa478a1381150c32b3';
+const JOB_ADDRESS = '0x2ef7801c6A9d451EF20d0F513c738CC012C57bC3';
 const PK = getPrivateKey(network);
 const FLASHBOTS_PK = process.env.FLASHBOTS_BUNDLE_SIGNING_KEY;
 const blockListener = new BlockListener(provider);
 
 const signer = new Wallet(PK, provider);
-const job = new Contract(JOB_ADDRESS, TendV2KeeperV2ABI, signer);
+const job = new Contract(JOB_ADDRESS, TendV2ABI, signer);
 const lastWorkAt: Record<string, BigNumber> = {};
 const strategyWorkInProgress: Record<string, boolean> = {};
 
@@ -55,6 +55,8 @@ export async function runStrategiesJob(): Promise<void> {
 	}
 	const [strategies, cd]: [string[], BigNumber] = await Promise.all([job.strategies(), job.workCooldown()]);
 	cooldown = cd;
+
+	console.log({ strategies });
 
 	const maxStrategiesPerBatch = 5;
 	const batchesToCreate = Math.ceil(strategies.length / maxStrategiesPerBatch);
@@ -135,7 +137,7 @@ function tryToWorkStrategy(strategy: Address) {
 				chainId,
 				contract: job,
 				functionArgs: [[strategy]],
-				functionName: 'work',
+				functionName: 'workForTokens',
 				options,
 			});
 
