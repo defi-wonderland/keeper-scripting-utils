@@ -48,7 +48,7 @@ const jobWorkInProgress: Record<string, boolean> = {};
 const FIRST_BURST_SIZE = 2;
 const FUTURE_BLOCKS = 0;
 const RETRY_BURST_SIZE = 3;
-const PRIORITY_FEE = 10; // Dehardcode
+const PRIORITY_FEE = 2.1;
 
 let flashbots: Flashbots;
 

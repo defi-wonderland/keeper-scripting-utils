@@ -52,8 +52,8 @@ export async function sendAndRetryUntilNotWorkable(props: SendAndRetryUntilNotWo
 	if (!retryBundle) {
 		return false;
 	}
-	//TODO: do this dynamically
-	const recalculatedDynamicId = makeid(5);
+
+	const recalculatedDynamicId = dynamicDebugId ? makeid(dynamicDebugId.length) : undefined;
 
 	return sendAndRetryUntilNotWorkable({
 		...props,

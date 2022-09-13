@@ -101,7 +101,7 @@ const FUTURE_BLOCKS = 0;
 // Define the size of the batches after the first batch of bundles
 const RETRY_BURST_SIZE = 3;
 // Define the priority fee to use
-const PRIORITY_FEE = 2.1; // Dehardcode
+const PRIORITY_FEE = 2.1;
 
 // Create a variable that will hold our Flashbots instance
 let flashbots: Flashbots;
@@ -245,7 +245,7 @@ async function startWindow(jobsContracts: Contract[]) {
  *
  */
 async function tryToWorkJob(job: Contract, block: Block) {
-	// Check if job is trying to be worked already. // TODO improve
+	// Check if job is trying to be worked already.
 	if (jobWorkInProgress[job.address]) {
 		console.log('Work in progress for job: ', job.address);
 		return;

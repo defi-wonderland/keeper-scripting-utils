@@ -102,7 +102,7 @@ const FUTURE_BLOCKS = 0;
 // Define the size of the batches after the first batch of bundles
 const RETRY_BURST_SIZE = 3;
 // Define the priority fee to use
-const PRIORITY_FEE = 2.1; // Dehardcode
+const PRIORITY_FEE = 2.1;
 
 // Create a variable that will hold our Flashbots instance
 let flashbots: Flashbots;

@@ -23,7 +23,7 @@ const lastWorkAt: Record<string, BigNumber> = {};
 const strategyWorkInQueue: Record<string, boolean> = {};
 const targetBlocks: Record<string, number> = {};
 const options = {
-	gasLimit: 1_000_000, // TODO DEHARDCODE
+	gasLimit: 1_000_000,
 };
 
 let txInProgress = false;

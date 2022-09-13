@@ -2,8 +2,6 @@ import { formatBundlesTxsToType2, createBundlesWithSameTxs, createBundlesWithDif
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { BundleBurstGroup, PrepareFlashbotBundleForRetryProps } from '@types';
 
-// TODO take off id argument from createBundle, both prepeare functions, sendRetry and remove from BundleBurstGroup type
-
 /**
  * @notice Helper function to prepare new batch of bundles after previous batch failed.
  *

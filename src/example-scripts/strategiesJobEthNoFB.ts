@@ -16,7 +16,7 @@ const blockListener = new BlockListener(provider);
 const JOB_ADDRESS = '0xbA3ae0D23D3CFb74d829615b304F02C366e75d5E';
 const PK = getPrivateKey(network);
 const BLOCKS_TO_WAIT = 2;
-const PRIORITY_FEE = 10; // Dehardcode
+const PRIORITY_FEE = 2.1;
 
 const signer = new Wallet(PK, provider);
 const job = new Contract(JOB_ADDRESS, StrategiesJob, signer);
