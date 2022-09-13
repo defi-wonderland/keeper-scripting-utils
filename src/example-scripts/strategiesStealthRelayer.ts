@@ -8,7 +8,14 @@ import {
 	sendAndRetryUntilNotWorkable,
 	populateTransactions,
 } from './../transactions';
-import { getNodeUrlWss, getPrivateKey } from './../utils';
+import {
+	getNodeUrlWss,
+	getPrivateKey,
+	ChainId,
+	FLASHBOTS_RPC_BY_NETWORK,
+	NETWORKS_IDS_BY_NAME,
+	SUPPORTED_NETWORKS,
+} from './../utils';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { getStealthHash } from '@keep3r-network/cli-utils';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
@@ -19,19 +26,19 @@ dotenv.config();
 
 /*
 	Note: This job is a simplified version of harvest-v2-keep3r-v2 script. Refer to that script for
-		  very similar documented code. 
+		  very similar documented code.
 */
 
-const network = 'goerli';
-const chainId = 5;
+const network: SUPPORTED_NETWORKS = 'goerli';
+const chainId: ChainId = NETWORKS_IDS_BY_NAME[network];
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
 const blockListener = new BlockListener(provider);
 const JOB_ADDRESS = '0x9DC52d978290f13b73692C5AeA21B4C8954e909A';
 const PK = getPrivateKey(network);
 const signer = new Wallet(PK, provider);
-const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
-const FLASHBOTS_RPC = 'https://relay-goerli.flashbots.net';
+const FLASHBOTS_PK = process.env.FLASHBOTS_BUNDLE_SIGNING_KEY;
+const FLASHBOTS_RPC: string = FLASHBOTS_RPC_BY_NETWORK[network];
 const secondsBefore = 0;
 const job = new Contract(JOB_ADDRESS, TestJob, signer);
 

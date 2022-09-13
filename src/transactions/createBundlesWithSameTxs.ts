@@ -15,16 +15,14 @@ import { BundleBurstGroup, CreateBundlesProps } from '@types';
  * @param firstBlockOfBatch The first block to target for the first bundle. For example, say we are in block 1000
  * 							and we want to send our bundles to block 1005. In that case, block 1005 will be the
  * 							firstBlockOfBatch.
- * @param id				Optional parameter to identify the ID //TODO remove this
  *
  * @return An array of unsigned transactions that will be on every bundle
  */
 export function createBundlesWithSameTxs(props: CreateBundlesProps): BundleBurstGroup[] {
-	const { firstBlockOfBatch, burstSize, unsignedTxs, id } = props;
+	const { firstBlockOfBatch, burstSize, unsignedTxs } = props;
 
 	return new Array(burstSize).fill(null).map((_, index) => ({
 		targetBlock: firstBlockOfBatch + index,
 		txs: unsignedTxs,
-		id,
 	}));
 }

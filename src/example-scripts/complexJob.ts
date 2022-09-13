@@ -7,7 +7,7 @@ import {
 	sendAndRetryUntilNotWorkable,
 	populateTransactions,
 } from './../transactions';
-import { getNodeUrlWss, getPrivateKey } from './../utils';
+import { getNodeUrlWss, getPrivateKey, FLASHBOTS_RPC_BY_NETWORK, NETWORKS_IDS_BY_NAME, SUPPORTED_NETWORKS } from './../utils';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
@@ -16,18 +16,18 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 /*==============================================================/*
-		                      SETUP			
+		                      SETUP
 /*==============================================================*/
 
-const network = 'goerli';
-const chainId = 5;
+const network: SUPPORTED_NETWORKS = 'goerli';
+const chainId = NETWORKS_IDS_BY_NAME[network];
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
 const blockListener = new BlockListener(provider);
 const JOB_ADDRESS = '0x4C8DB41095cD6fb755466463F0C6B2Ab9C826804';
 const PK = getPrivateKey(network);
-const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
-const FLASHBOTS_RPC = 'https://relay-goerli.flashbots.net';
+const FLASHBOTS_PK = process.env.FLASHBOTS_BUNDLE_SIGNING_KEY;
+const FLASHBOTS_RPC = FLASHBOTS_RPC_BY_NETWORK[network];
 const secondsBefore = 0;
 
 const FIRST_BURST_SIZE = 2;
@@ -40,7 +40,7 @@ const job = new Contract(JOB_ADDRESS, BasicJob, signer);
 let flashbots: Flashbots;
 
 /*==============================================================/*
-		                   MAIN SCRIPT			
+		                   MAIN SCRIPT
 /*==============================================================*/
 
 export async function runComplexJob(): Promise<void> {
@@ -92,14 +92,14 @@ export async function runComplexJob(): Promise<void> {
 			// If we arrived here, it means we will be sending a transaction, so we optimistically set this to true.
 			txInProgress = true;
 
-			/* 
+			/*
 				We are going to send this through Flashbots, which means we will be sending multiple bundles to different
 				blocks inside a batch. Here we are calculating which will be the last block we will be sending the
 				last bundle of our first batch to. This information is needed to calculate what will the maximum possible base
 				fee be in that block, so we can calculate the maxFeePerGas parameter for all our transactions.
 				For example: we are in block 100 and we send to 100, 101, 102. We would like to know what is the maximum possible
 				base fee at block 102 to make sure we don't populate our transactions with a very low maxFeePerGas, as this would
-				cause our transaction to not be mined until the max base fee lowers. 
+				cause our transaction to not be mined until the max base fee lowers.
 			*/
 			const blocksAhead = FUTURE_BLOCKS + FIRST_BURST_SIZE;
 

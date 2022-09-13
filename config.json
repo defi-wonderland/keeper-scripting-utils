@@ -1,8 +1,0 @@
-{
-    "log": {
-      "file": {
-        "level": "warn",
-        "filename": "logs/important.log"
-      }
-    }
-  }

@@ -8,7 +8,15 @@ import {
 	populateTransactions,
 	createBundlesWithDifferentTxs,
 } from '../../../transactions';
-import { getNodeUrlWss, getPrivateKey } from '../../../utils';
+import {
+	getNodeUrlWss,
+	getPrivateKey,
+	ChainId,
+	FLASHBOTS_RPC_BY_NETWORK,
+	NETWORKS_IDS_BY_NAME,
+	SUPPORTED_NETWORKS,
+	Address,
+} from '../../../utils';
 import { stopAndRestartWork } from '../../../utils/stopAndRestartWork';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { getStealthHash, makeid } from '@keep3r-network/cli-utils';
@@ -37,10 +45,10 @@ dotenv.config();
 /*==============================================================*/
 
 // Set the network we will be working jobs on
-const network = 'mainnet';
+const network: SUPPORTED_NETWORKS = 'mainnet';
 
 // Set the chainId of that network
-const chainId = 1;
+const chainId: ChainId = NETWORKS_IDS_BY_NAME[network];
 
 // Set the rpc we'll be using for the network. Use websockets.
 const nodeUrl = getNodeUrlWss(network);
@@ -58,11 +66,11 @@ const stealthRelayerAddress = '0x0a61c2146A7800bdC278833F21EBf56Cd660EE2a';
 const PK = getPrivateKey(network);
 
 // Set the PK we'll be using to sign flashbot bundles
-const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
+const FLASHBOTS_PK = process.env.FLASHBOTS_BUNDLE_SIGNING_KEY;
 
 // Set the RPC for flashbots. We can also set other private relayer rpcs in an array if we wished to
 // send the bundles to multiple private relayers like eden
-const FLASHBOTS_RPC = 'https://relay.flashbots.net';
+const FLASHBOTS_RPC: string = FLASHBOTS_RPC_BY_NETWORK[network];
 
 // Create an instance of our BlockListener class
 const blockListener = new BlockListener(provider);
@@ -180,7 +188,7 @@ export async function runStrategiesJob(): Promise<void> {
  * @param strategy The strategy to try to work
  *
  */
-function tryToWorkStrategy(strategy: string) {
+function tryToWorkStrategy(strategy: Address) {
 	console.log('Start Working on strategy: ', strategy);
 
 	// Calculate how long to wait until the strategy is workable by doing: currentTimeStamp - (lastWorkAt + cooldown)

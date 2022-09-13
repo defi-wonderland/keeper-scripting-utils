@@ -1,7 +1,7 @@
 import StrategiesJob from '../../abi/StrategiesJob.json';
 import { BlockListener } from './../subscriptions/blocks';
 import { sendTx } from './../transactions';
-import { getNodeUrlWss, getPrivateKey } from './../utils';
+import { Address, getNodeUrlWss, getPrivateKey, SUPPORTED_NETWORKS } from './../utils';
 import { stopAndRestartWork } from './../utils/stopAndRestartWork';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
@@ -9,7 +9,7 @@ import { mergeMap, timer } from 'rxjs';
 const dotenv = require('dotenv');
 dotenv.config();
 
-const network = 'optimism';
+const network: SUPPORTED_NETWORKS = 'optimism_goerli';
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
 const blockListener = new BlockListener(provider);
@@ -50,7 +50,7 @@ export async function runStrategiesJob(): Promise<void> {
 	});
 }
 
-function tryToWorkStrategy(strategy: string) {
+function tryToWorkStrategy(strategy: Address) {
 	console.log('Start Working on strategy: ', strategy);
 
 	const readyTime = lastWorkAt[strategy].add(cooldown);

@@ -73,7 +73,6 @@ export interface SendAndRetryUntilNotWorkableProps {
  * @param notIncludedBlock         	  The target block of our first non-included bundle.
  * @param previousBurstSize        	  The burst size we used the first time we send our bundles.
  * @param newBurstSize             	  The new burst size we would like to use when retrying to work the job.
- * @param id                       	  An id to identify the bundles. //TODO erase this
  * @param regenerateTxs            	  An optional callback function that generates the new set of transactions to be included
  *								   	  in the next retry bundles. If not provided, the new bundles will use the previous set of txs provided
  *								   	  on the txs parameter.
@@ -99,7 +98,6 @@ export interface PrepareFlashbotBundleForRetryProps {
 		notIncludedBlockOfPreviousBundle: Block,
 		firstBlockOfNextBatch: number
 	) => Promise<RecalculatePriorityFeeInWeiReturnValue>;
-	id?: string;
 }
 
 /**
@@ -115,7 +113,6 @@ export interface CreateBundlesProps {
 	unsignedTxs: TransactionRequest[];
 	burstSize: number;
 	firstBlockOfBatch: number;
-	id?: string; // TODO: remove this and all other ids that are not static or dynamic
 }
 
 /**

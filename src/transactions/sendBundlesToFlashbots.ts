@@ -12,8 +12,8 @@ import chalk from 'chalk';
  * @param bundles   The bundles to send to flashbots.
  * @param flashbots An instance of Flashbots.
  * @param staticDebugId   Optional static id to help with debugging. Every batch will share this id.
- * @param dynamicDebugId  Optional dynamic id to help with debugging. Every batch will have a different dynamic id. This dynamic id will
- * 						  be recalculated every time a bundle is created.
+ * @param dynamicDebugId  Optional dynamic id to help with debugging. Every batch will have a different dynamic id.
+ * 												This dynamic id will be recalculated every time a bundle is created.
  *
  * @returns A boolean to know whether the bundle was included or not.
  */

@@ -8,7 +8,15 @@ import {
 	populateTransactions,
 	createBundlesWithSameTxs,
 } from '../../../transactions';
-import { getNodeUrlWss, getPrivateKey } from '../../../utils';
+import {
+	getNodeUrlWss,
+	getPrivateKey,
+	ChainId,
+	FLASHBOTS_RPC_BY_NETWORK,
+	NETWORKS_IDS_BY_NAME,
+	SUPPORTED_NETWORKS,
+	Address,
+} from '../../../utils';
 import { stopAndRestartWorkUpkeep } from '../../../utils/stopAndRestartWork';
 import { TransactionRequest, Block } from '@ethersproject/abstract-provider';
 import { makeid } from '@keep3r-network/cli-utils';
@@ -20,16 +28,16 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 /*
-	First of all, let's explain how MakerDao's Upkeep job works to have a general sense of it. One of the key elements
-	to address is that this job can be worked by a list of whitelisted keepers called networks. Each of them is going to
+	First of all it is very important to explain a little bit about how MakerDAO's Upkeep job works. One of the key elements
+	to address is that this job can be worked by a list of whitelisted keepers called networks. Each of them is gonna
 	have a specific window of time (13 blocks) to work. This is to democratize the process and avoid competition
-	between them. The keeper that is allowed to work in the current window is called master.
-	This workflow is divided in three vital parts:
-	- Upkeep job contract: this contract manages and calls the underlying workable jobs contracts. This is the
-												 contract we are going to be calling to work.
-	- Sequencer contract: this contract is in charge of managing the time window of each keeper and ensure that only
+	between them. The keeper that si allowed to work in the current window is called master.
+	This workflow is devided in three vital parts:
+	- Upkeep job contract: this is a contract that manages and call the underlying workable jobs contracts. This is the
+												 contract we are gonna be calling to work.
+	- Sequencer contract: this contract is in charge of managing the windown time of each keeper and ensure that only
 												the master keeper of that window is able to call the work function on the Upkeep contract.
-	- Workable jobs: These are the underlying jobs containing the logic that needs to be execute.
+	- Workable jobs: These are the underlying jobs that have the logic that needs to be execute.
 */
 
 /*==============================================================/*
@@ -37,10 +45,10 @@ dotenv.config();
 /*==============================================================*/
 
 // Set the network we will be working jobs on.
-const network = 'mainnet';
+const network: SUPPORTED_NETWORKS = 'mainnet';
 
 // Set the chainId of that network.
-const chainId = 1;
+const chainId: ChainId = NETWORKS_IDS_BY_NAME[network];
 
 // Set the rpc we'll be using for the network. Use websockets.
 const nodeUrl = getNodeUrlWss(network);
@@ -55,11 +63,11 @@ const UPKEEP_JOB_ADDRESS = '0x5D469E1ef75507b0E0439667ae45e280b9D81B9C';
 const PK = getPrivateKey(network);
 
 // Set the PK we'll be using to sign flashbot bundles
-const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
+const FLASHBOTS_PK = process.env.FLASHBOTS_BUNDLE_SIGNING_KEY;
 
 // Set the RPC for flashbots. We can also set other private relayer rpcs in an array if we wished to
 // send the bundles to multiple private relayers like eden.
-const FLASHBOTS_RPC = 'https://relay.flashbots.net';
+const FLASHBOTS_RPC: string = FLASHBOTS_RPC_BY_NETWORK[network];
 
 // Create an instance of our BlockListener class
 const blockListener = new BlockListener(provider);
@@ -130,7 +138,7 @@ export async function runUpkeepJob(): Promise<void> {
 	}
 
 	// Fetches every workable job address.
-	const jobsAddresses: string[] = await Promise.all(jobsAddressesPromises);
+	const jobsAddresses: Address[] = await Promise.all(jobsAddressesPromises);
 
 	// Psudo workable job interface with only needed method we will use in this script.
 	const makerJobAbiLike = ['function workable(bytes32 network) view returns (bool canWork, bytes memory args)'];

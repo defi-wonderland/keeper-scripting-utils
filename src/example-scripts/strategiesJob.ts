@@ -1,4 +1,12 @@
 import StrategiesJob from '../../abi/StrategiesJob.json';
+import {
+	getNodeUrlWss,
+	getPrivateKey,
+	FLASHBOTS_RPC_BY_NETWORK,
+	NETWORKS_IDS_BY_NAME,
+	SUPPORTED_NETWORKS,
+	Address,
+} from '../utils';
 import { Flashbots } from './../flashbots/flashbots';
 import { BlockListener } from './../subscriptions/blocks';
 import {
@@ -7,7 +15,6 @@ import {
 	sendAndRetryUntilNotWorkable,
 	populateTransactions,
 } from './../transactions';
-import { getNodeUrlWss, getPrivateKey } from './../utils';
 import { stopAndRestartWork } from './../utils/stopAndRestartWork';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { makeid } from '@keep3r-network/cli-utils';
@@ -19,21 +26,21 @@ dotenv.config();
 
 /*
 	Note: This job is a simplified version of harvest-v2-keep3r-v2 script. It uses strategies, but doesn't add the complexity of
-		  using the StealthRelayer contract. 
+		  using the StealthRelayer contract.
 */
 
 /*==============================================================/*
-		                      SETUP			
+		                      SETUP
 /*==============================================================*/
 
-const network = 'goerli';
-const chainId = 5;
+const network: SUPPORTED_NETWORKS = 'goerli';
+const chainId: number = NETWORKS_IDS_BY_NAME[network];
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
 const JOB_ADDRESS = '0xbA3ae0D23D3CFb74d829615b304F02C366e75d5E';
 const PK = getPrivateKey(network);
-const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
-const FLASHBOTS_RPC = 'https://relay-goerli.flashbots.net';
+const FLASHBOTS_PK = process.env.FLASHBOTS_BUNDLE_SIGNING_KEY;
+const FLASHBOTS_RPC: string = FLASHBOTS_RPC_BY_NETWORK[network];
 const blockListener = new BlockListener(provider);
 
 const signer = new Wallet(PK, provider);
@@ -67,7 +74,7 @@ export async function runStrategiesJob(): Promise<void> {
 	});
 }
 
-function tryToWorkStrategy(strategy: string) {
+function tryToWorkStrategy(strategy: Address) {
 	console.log('\nStart Working on strategy: ', strategy);
 
 	const readyTime = lastWorkAt[strategy].add(cooldown);
@@ -133,7 +140,6 @@ function tryToWorkStrategy(strategy: string) {
 				unsignedTxs: txs,
 				burstSize: FIRST_BURST_SIZE,
 				firstBlockOfBatch,
-				id: strategy,
 			});
 			const dynamicDebugId = makeid(5);
 			const result = await sendAndRetryUntilNotWorkable({

@@ -1,3 +1,4 @@
+import { Address } from './networks';
 import { BigNumber, Contract, ethers, providers } from 'ethers';
 
 const KP3RV1_KEEPER_WORK_EVENT_TOPIC = '0x3cda93551ad083704be19fabbd7c3eb94d88f6e72ff221bdea9017e52e4144e8';
@@ -19,7 +20,7 @@ const KP3RV2_KEEPER_WORK_EVENT_TOPIC = '0x46f2180879a7123a197cc3828c28955d70d661
  * @return The amount of KP3R rewarded to the keeper expressed as a BigNumber.
  */
 export const calculateKeeperRewardMainnet = async (
-	keeperAddress: string,
+	keeperAddress: Address,
 	gasUsed: BigNumber,
 	keep3rHelper: Contract,
 	provider: providers.BaseProvider
@@ -118,7 +119,7 @@ export const calculateKP3RNetProfitV2 = async (
  * @return The amount of KP3R rewarded to the keeper expressed as a BigNumber.
  */
 export const calculateKeeperRewardMainnetSlow = async (
-	keeperAddress: string,
+	keeperAddress: Address,
 	gasUsed: BigNumber,
 	provider: providers.BaseProvider
 ): Promise<BigNumber> => {

@@ -1,7 +1,7 @@
 import StrategiesJob from '../../abi/StrategiesJob.json';
 import { BlockListener } from './../subscriptions/blocks';
 import { sendTx } from './../transactions';
-import { getNodeUrlWss, getPrivateKey } from './../utils';
+import { Address, getNodeUrlWss, getPrivateKey, SUPPORTED_NETWORKS } from './../utils';
 import { stopAndRestartWork } from './../utils/stopAndRestartWork';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
@@ -9,7 +9,7 @@ import { mergeMap, timer } from 'rxjs';
 const dotenv = require('dotenv');
 dotenv.config();
 
-const network = 'fantom';
+const network: SUPPORTED_NETWORKS = 'fantom';
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
 const blockListener = new BlockListener(provider);
@@ -31,7 +31,7 @@ let cooldown: BigNumber;
 
 /*
 	NOTICE: This job is identical to the strategiesPolygon script with the only difference that this is
-	executed on FTM and FTM doesn't have EIP-1559. Refer to strategiesPolygon for very similar documented code. 
+	executed on FTM and FTM doesn't have EIP-1559. Refer to strategiesPolygon for very similar documented code.
 */
 
 export async function runStrategiesJob(): Promise<void> {
@@ -48,7 +48,7 @@ export async function runStrategiesJob(): Promise<void> {
 	});
 }
 
-function tryToWorkStrategy(strategy: string) {
+function tryToWorkStrategy(strategy: Address) {
 	console.log('Start Working on strategy: ', strategy);
 
 	const readyTime = lastWorkAt[strategy].add(cooldown);

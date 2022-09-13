@@ -8,7 +8,14 @@ import {
 	populateTransactions,
 	createBundlesWithSameTxs,
 } from '../transactions';
-import { getNodeUrlWss, getPrivateKey } from '../utils';
+import {
+	getNodeUrlWss,
+	getPrivateKey,
+	FLASHBOTS_RPC_BY_NETWORK,
+	NETWORKS_IDS_BY_NAME,
+	SUPPORTED_NETWORKS,
+	Address,
+} from '../utils';
 import { stopAndRestartWorkUpkeep } from '../utils/stopAndRestartWork';
 import { TransactionRequest, Block } from '@ethersproject/abstract-provider';
 import { makeid } from '@keep3r-network/cli-utils';
@@ -22,13 +29,13 @@ dotenv.config();
 const KEEP3R_SEQUENCER_POSITION = 2;
 const UPKEEP_JOB_ADDRESS = '0x29b1b692dc9fe35cb2ee28bd8ce1ef0edfd0bf37';
 const SEQUENCER = '0xa8db33bEd8EC48737F54665D4eCD2e37977ea439';
-const network = 'goerli';
-const chainId = 5;
+const network: SUPPORTED_NETWORKS = 'goerli';
+const chainId: number = NETWORKS_IDS_BY_NAME[network];
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
 const PK = getPrivateKey(network);
-const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
-const FLASHBOTS_RPC = 'https://relay-goerli.flashbots.net';
+const FLASHBOTS_PK = process.env.FLASHBOTS_BUNDLE_SIGNING_KEY;
+const FLASHBOTS_RPC: string = FLASHBOTS_RPC_BY_NETWORK[network];
 const blockListener = new BlockListener(provider);
 const KEEP3R_NETWORK_TAG = formatBytes32String('KEEP3R');
 
@@ -66,7 +73,7 @@ export async function runUpkeepJob(): Promise<void> {
 	for (let index = 0; index < jobsAmount; index++) {
 		jobsAddressesPromises.push(sequencer.jobAt(index));
 	}
-	const jobsAddresses: string[] = await Promise.all(jobsAddressesPromises);
+	const jobsAddresses: Address[] = await Promise.all(jobsAddressesPromises);
 	const makerJobAbiLike = ['function workable(bytes32 network, bool trigger) view returns (bool canWork, bytes memory args)'];
 	const jobsContracts = await Promise.all(
 		jobsAddresses.map((address) => {

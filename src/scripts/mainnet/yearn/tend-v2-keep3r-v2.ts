@@ -7,7 +7,15 @@ import {
 	sendAndRetryUntilNotWorkable,
 	populateTransactions,
 } from '../../../transactions';
-import { getNodeUrlWss, getPrivateKey } from '../../../utils';
+import {
+	getNodeUrlWss,
+	getPrivateKey,
+	ChainId,
+	FLASHBOTS_RPC_BY_NETWORK,
+	NETWORKS_IDS_BY_NAME,
+	SUPPORTED_NETWORKS,
+	Address,
+} from '../../../utils';
 import { stopAndRestartWork } from '../../../utils/stopAndRestartWork';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { makeid } from '@keep3r-network/cli-utils';
@@ -17,14 +25,14 @@ import { mergeMap, timer, filter } from 'rxjs';
 const dotenv = require('dotenv');
 dotenv.config();
 
-const network = 'mainnet';
-const chainId = 1;
+const network: SUPPORTED_NETWORKS = 'mainnet';
+const chainId: ChainId = NETWORKS_IDS_BY_NAME[network];
+const FLASHBOTS_RPC: string = FLASHBOTS_RPC_BY_NETWORK[network];
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
 const JOB_ADDRESS = '0xcd7f72f12c4b87dabd31d3aa478a1381150c32b3';
 const PK = getPrivateKey(network);
-const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
-const FLASHBOTS_RPC = 'https://relay.flashbots.net';
+const FLASHBOTS_PK = process.env.FLASHBOTS_BUNDLE_SIGNING_KEY;
 const blockListener = new BlockListener(provider);
 
 const signer = new Wallet(PK, provider);
@@ -67,7 +75,7 @@ export async function runStrategiesJob(): Promise<void> {
 	});
 }
 
-function tryToWorkStrategy(strategy: string) {
+function tryToWorkStrategy(strategy: Address) {
 	console.log('Start Working on strategy: ', strategy);
 
 	const readyTime = lastWorkAt[strategy].add(cooldown);
@@ -136,7 +144,6 @@ function tryToWorkStrategy(strategy: string) {
 				unsignedTxs: txs,
 				burstSize: FIRST_BURST_SIZE,
 				firstBlockOfBatch,
-				id: strategy,
 			});
 
 			const result = await sendAndRetryUntilNotWorkable({

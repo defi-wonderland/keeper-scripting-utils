@@ -2,7 +2,7 @@ import StrategiesJob from '../../abi/StrategiesJob.json';
 import { GasService } from './../services/gas.service';
 import { BlockListener } from './../subscriptions/blocks';
 import { sendTx } from './../transactions';
-import { getNodeUrlWss, getPrivateKey, toGwei } from './../utils';
+import { getNodeUrlWss, getPrivateKey, toGwei, ChainId, NETWORKS_IDS_BY_NAME, SUPPORTED_NETWORKS, Address } from './../utils';
 import { stopAndRestartWork } from './../utils/stopAndRestartWork';
 import { providers, Wallet, Contract, BigNumber, Overrides } from 'ethers';
 import { mergeMap, timer } from 'rxjs';
@@ -11,13 +11,13 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 /*==============================================================/*
-		                      SETUP			
+		                      SETUP
 /*==============================================================*/
 
 // Set the network we will be working jobs on
-const network = 'polygon';
+const network: SUPPORTED_NETWORKS = 'polygon';
 // Set the chainId of that network
-const chainId = 137;
+const chainId: ChainId = NETWORKS_IDS_BY_NAME[network];
 // Set the rpc we'll be using for the network. Use websockets.
 const nodeUrl = getNodeUrlWss(network);
 // Create a new provider for the rpc
@@ -44,14 +44,14 @@ const job = new Contract(JOB_ADDRESS, StrategiesJob, signer);
 	Create a mapping that tracks which was the last timestamp at which a job was worked.
 	Tracking this is useful for our script to know whether it should continue fetching blocks or wait unti the job is workable again to do so.
 	If the job it has been worked by us/other keeper, there's no point in fetching blocks and enter the script for that specific job
-	until its cooldown wears off. 
+	until its cooldown wears off.
 */
 const lastWorkAt: Record<string, BigNumber> = {};
 /*
 	Create a mapping that stores whether a job is workable or not
-	Remember that a job can be workable but our script won't try to work it if we have set a BLOCKS_TO_WAIT delay 
-	to avoid reverts in non-competitive environments. 
-	So, If the job is workable and is has not been worked, then this mapping will store: jobAddress => true 
+	Remember that a job can be workable but our script won't try to work it if we have set a BLOCKS_TO_WAIT delay
+	to avoid reverts in non-competitive environments.
+	So, If the job is workable and is has not been worked, then this mapping will store: jobAddress => true
 */
 const strategyWorkInQueue: Record<string, boolean> = {};
 /*
@@ -60,9 +60,9 @@ const strategyWorkInQueue: Record<string, boolean> = {};
 */
 const targetBlocks: Record<string, number> = {};
 
-/* 
+/*
 	Creates a flag to track whether a transaction to work a job is currently in the mempool or not.
-	This is used to avoid sending other transactions until that one is processed. 
+	This is used to avoid sending other transactions until that one is processed.
 */
 let txInProgress = false;
 
@@ -132,7 +132,24 @@ export async function runStrategiesJob(): Promise<void> {
  * @param strategy The strategy to try to work
  *
  */
-function tryToWorkStrategy(strategy: string) {
+/**
+ *
+ * @notice Attempts to work a strategy.
+ *
+ * @dev  Strategies have two different parameters to establish whether they're workable or not. The cooldown between works, which is constant,
+ *       and a trigger which is dependant on external metrics like amount of value deposited in a vault, which is dependant on user behavior
+ *       and can't be accurately predicted. For this reason, the function calculates when the cooldown of the strategy wears off,
+ *       and only then it starts trying to work it. Because the external metrics are unpredictable, once the cooldown has worn off,
+ *       the function will ask if the function is workable or not.
+ *       If it is, it will check if the blocks we established as delay have passed and if they've, it will check if the strategy is still
+ *       workable. If it is, it will send the transaction to try to work it. Otherwise, it will check if other keeper worked it and
+ *       recalculate the time at which it should start trying to work it again and sleep until then to avoid doing unnecessary http requests to
+ *       fetch blocks.
+ *
+ * @param strategy The strategy to try to work
+ *
+ */
+function tryToWorkStrategy(strategy: Address) {
 	console.log('Start Working on strategy: ', strategy);
 
 	// Calculate how long to wait until the strategy is workable by doing: currentTimeStamp - (lastWorkAt + cooldown)
@@ -144,7 +161,7 @@ function tryToWorkStrategy(strategy: string) {
 	const sub = timer(time)
 		.pipe(mergeMap(() => blockListener.stream()))
 		.subscribe(async (block) => {
-			/* 
+			/*
 			   If the strategy is workable, and a new block comes, check if there's already a transaction in progress. Return if there is one.
 			   We do this to avoid sending multiple transactions that try to work the same strategy.
 			*/
@@ -173,8 +190,8 @@ function tryToWorkStrategy(strategy: string) {
 			// Initialize a variable that stores whether the strategy is truly workable or not
 			let isWorkable = false;
 
-			/* 
-			   Check if the strategy is really workable. 
+			/*
+			   Check if the strategy is really workable.
 			   Remember that strategies like these have an unpredictable component that determines whether or not the strategy can be worked.
 			   We start checking if the strategy can we worked as soon as the strategy's cooldown wears off, but we need to call workable
 			   to see if the variable component has also been fulfilled.
@@ -186,11 +203,11 @@ function tryToWorkStrategy(strategy: string) {
 				console.log({ strategy });
 			}
 
-			/* 
+			/*
 			   If the strategy is not workable we check whether it is because the variable component has not been fulfilled yet,
 			   or due to another keeper having worked it.
 			   To do this we check whether lastWorkAt has changed. If it changed then another keeper worked the strategy, meaning
-			   we need to update the last time it was worked on in our mapping, set the strategyWorkInQueue of our strategy to false, 
+			   we need to update the last time it was worked on in our mapping, set the strategyWorkInQueue of our strategy to false,
 			   and set the targetBlocks of that strategy to 0. Lastly, we remove our subscriptions and listeners, and we restart the process
 			   by calling tryToWorkStrategy() again.
 			   Otherwise, if the strategy is not workable because the variable component hasn't been fulfilled, we simply return and wait
@@ -208,12 +225,12 @@ function tryToWorkStrategy(strategy: string) {
 				return;
 			}
 
-			/* 
+			/*
 			   There's a possibility that when we enter this function for the first time, a block arrives and the strategy is workable.
 			   Because we need to know when the strategy is first workable to assign a targetBlocks[strategy] a value, we reach this if
 			   block, and in here we check if it has an targetBlocks[strategy] assigned. If it doesn't, we assign one and return because
 			   we need to wait for BLOCKS_TO_WAIT to have passed in order to work the strategy.
-			   Otherwise we keep going. 
+			   Otherwise we keep going.
 			*/
 			if (!targetBlocks[strategy] || targetBlocks[strategy] === 0) {
 				strategyWorkInQueue[strategy] = true;

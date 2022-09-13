@@ -1,4 +1,5 @@
 import { BlockListener } from '../subscriptions/blocks';
+import { Address } from './networks';
 import { Contract } from 'ethers';
 import { Subscription } from 'rxjs';
 
@@ -15,10 +16,10 @@ import { Subscription } from 'rxjs';
  *
  */
 export function stopAndRestartWork(
-	strategy: string,
+	strategy: Address,
 	blockListener: BlockListener,
 	sub: Subscription,
-	tryToWorkFunction: (strategy: string) => void
+	tryToWorkFunction: (strategy: Address) => void
 ): void {
 	// Stops listening blocks from observable.
 	sub.unsubscribe();

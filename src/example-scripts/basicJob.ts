@@ -6,7 +6,7 @@ import {
 	sendAndRetryUntilNotWorkable,
 	populateTransactions,
 } from '../transactions';
-import { getNodeUrlWss, getPrivateKey } from '../utils';
+import { getNodeUrlWss, getPrivateKey, FLASHBOTS_RPC_BY_NETWORK, NETWORKS_IDS_BY_NAME, SUPPORTED_NETWORKS } from '../utils';
 import { BlockListener } from './../subscriptions/blocks';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
@@ -15,15 +15,15 @@ import { mergeMap, take, timer } from 'rxjs';
 const dotenv = require('dotenv');
 dotenv.config();
 
-const network = 'goerli';
-const chainId = 5;
+const network: SUPPORTED_NETWORKS = 'goerli';
+const chainId = NETWORKS_IDS_BY_NAME[network];
 const nodeUrl = getNodeUrlWss(network);
 const provider = new providers.WebSocketProvider(nodeUrl);
 const blockListener = new BlockListener(provider);
 const JOB_ADDRESS = '0x4C8DB41095cD6fb755466463F0C6B2Ab9C826804';
 const PK = getPrivateKey(network);
-const FLASHBOTS_PK = process.env.FLASHBOTS_APIKEY;
-const FLASHBOTS_RPC = 'https://relay-goerli.flashbots.net';
+const FLASHBOTS_PK = process.env.FLASHBOTS_BUNDLE_SIGNING_KEY;
+const FLASHBOTS_RPC: string = FLASHBOTS_RPC_BY_NETWORK[network];
 
 const signer = new Wallet(PK, provider);
 const job = new Contract(JOB_ADDRESS, BasicJob, signer);
@@ -37,8 +37,8 @@ const PRIORITY_FEE = 10; // Dehardcode
 let flashbots: Flashbots;
 
 /*
-	NOTICE: This job is identical to the complexJob script with the only difference this script doens't use a variable cooldown. 
-	Refer to complexJob for very similar documented code. 
+	NOTICE: This job is identical to the complexJob script with the only difference this script doens't use a variable cooldown.
+	Refer to complexJob for very similar documented code.
 */
 
 export async function runBasicJob(): Promise<void> {
