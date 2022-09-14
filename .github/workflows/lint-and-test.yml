@@ -21,6 +21,9 @@ jobs:
       - run: yarn add -D esbuild
       - run: yarn test
         env: 
-          ALCHEMYKEY: ${{ secrets.ALCHEMYKEY }}
+          NODE_URI_ETHEREUM: ${{ secrets.NODE_URI_ETHEREUM }}
+          TENDERLY_ACCESS_KEY: ${{ secrets.TENDERLY_ACCESS_KEY }}
+          TENDERLY_USER: ${{ secrets.TENDERLY_USER }}
+          TENDERLY_PROJECT: ${{ secrets.TENDERLY_PROJECT }}
       - run: yarn lint
       - run: yarn build

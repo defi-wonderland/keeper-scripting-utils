@@ -36,6 +36,7 @@ export async function sendAndRetryUntilNotWorkable(props: SendAndRetryUntilNotWo
 	const { bundles, flashbots, isWorkableCheck, staticDebugId, dynamicDebugId } = props;
 
 	const jobIsStillWorkable = await isWorkableCheck();
+
 	if (!jobIsStillWorkable) {
 		console.log('Job is not workable');
 		return false;

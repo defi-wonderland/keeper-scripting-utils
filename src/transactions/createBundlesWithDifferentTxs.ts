@@ -1,7 +1,7 @@
 import { BundleBurstGroup, CreateBundlesProps } from '@types';
 
 /**
- * @notice Creates amount of bundles equal to burstSize with consecutive target blocks. Each bundle will contain different transactions.
+ * @notice Creates amount of bundles equal to burstSize with consecutive target blocks. Each bundle will contain a different transaction.
  * 		   An example of the bundle anatomy this function creates is the following: bundle1[tx1], bundle2[tx2], bundle3[tx3].
  *
  * @dev The length of the transaction array must coincide with the burstSize.
