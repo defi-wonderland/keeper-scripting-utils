@@ -1,18 +1,25 @@
 {
-  "name": "node-boilerplate",
+  "name": "keep3r-scripting-library",
   "version": "0.0.1",
-  "description": "Node Boilerplate",
+  "description": "A library containing helper functions that facilitate scripting for keepers of the Keep3r Network",
   "keywords": [
-    "node",
-    "typescript",
-    "boilerplate"
+    "ethereum",
+    "KP3R",
+    "keep3r",
+    "keep3r-network",
+    "keeper",
+    "wonderland",
+    "defi-wonderland"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/0xGorilla/node-boilerplate.git"
+    "url": "git+https://github.com/defi-wonderland/keep3r-cli-v2.git"
   },
   "license": "MIT",
-  "author": "0xGorilla",
+  "author": {
+    "name": "DeFi Wonderland",
+    "url": "https://github.com/defi-wonderland"
+  },
   "main": "dist/index",
   "types": "dist/index",
   "files": [
@@ -63,7 +70,7 @@
     "prettier": "2.4.1",
     "ts-jest": "29.0.0",
     "ts-node": "9.1.1",
-    "typedoc": "0.20.35",
+    "typedoc": "0.23.14",
     "typescript": "4.2.3"
   },
   "lint-staged": {
