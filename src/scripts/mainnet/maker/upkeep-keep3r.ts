@@ -160,8 +160,9 @@ export async function runUpkeepJob(): Promise<void> {
  * 				 Once calculated it sets a timer to start fetching blocks after that timer passes.
  * 				 Will fetch blocks and try to work each  workable job calling tryToWorkJob function for each available job.
  *
- * @dev    Since theres no exact way to translate amount of blocks in time, we have set and average block time of 15s
- * 				 and also a toleranceThreshold of 6 seconds. Wich gives as an average block time of 9 seconds.
+ * @dev    We have set and average block time of 12 seconds since we are in PoS and also a toleranceThreshold of 120 seconds
+ * 				 to start listening blocks 2 minutes before our work window. This way we can have a tolerance of at least 10 blocks
+ * 				 being skipped in the network.
  * 				 This is because we want to be sure that we are going to always start fetching blocks before our window to
  * 				 minimize the risk of starting to fetch in the middle of our own workable window.
  * 				 This function will iterate through every workable job and try to work all of them.
@@ -187,14 +188,15 @@ async function startWindow(jobsContracts: Contract[]) {
 	// Amount of blocks missing until our next work window.
 	const reminderBlocks = windowStart - currentBlock.number;
 
-	// Average duration of a block in goerli in seconds.
-	const blockDuration = 15 * 1000; // 15 seconds
+	// Average duration of a block in ethereum mainnet in seconds.
+	const blockDuration = 12 * 1000; // 12 seconds since PoS.
 
-	// Amount of seconds we subscract to block average duration in goerli.
-	const toleranceThreshold = 6 * 1000; // 6 seconds per blocks
+	// Amount of seconds we subtract from missing blocks time to ensure to always be listening before the window starts.
+	// In this case it will be 2 minutes before window starts which gives us a tolerance of 10 skipped blocks by the network.
+	const toleranceThreshold = 120 * 1000; // 120 seconds per blocks
 
 	// Amount of seconds to wail to start fetching blocks.
-	const time = reminderBlocks * blockDuration - reminderBlocks * toleranceThreshold;
+	const time = reminderBlocks * blockDuration - toleranceThreshold;
 
 	console.log({ windowStart });
 	console.log({ windowEnd });
