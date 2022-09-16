@@ -1,5 +1,5 @@
-import StealthRelayer from '../../abi/StealthRelayerGoerli.json';
-import TestJob from '../../abi/TestJob.json';
+import StealthRelayer from '../abi/StealthRelayerGoerli.json';
+import TestJob from '../abi/TestJob.json';
 import { Flashbots } from './../flashbots/flashbots';
 import { BlockListener } from './../subscriptions/blocks';
 import {

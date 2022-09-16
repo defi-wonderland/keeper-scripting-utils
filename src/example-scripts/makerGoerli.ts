@@ -1,5 +1,5 @@
-import MakerDAOUpkeepABI from '../../abi/MakerDAOUpkeep.json';
-import SequencerABI from '../../abi/Sequencer.json';
+import MakerDAOUpkeepABI from '../abi/MakerDAOUpkeep.json';
+import SequencerABI from '../abi/Sequencer.json';
 import { Flashbots } from '../flashbots/flashbots';
 import { BlockListener } from '../subscriptions/blocks';
 import {

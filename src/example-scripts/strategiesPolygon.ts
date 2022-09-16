@@ -1,4 +1,4 @@
-import StrategiesJob from '../../abi/StrategiesJob.json';
+import StrategiesJob from '../abi/StrategiesJob.json';
 import { GasService } from './../services/gas.service';
 import { BlockListener } from './../subscriptions/blocks';
 import { sendTx } from './../transactions';

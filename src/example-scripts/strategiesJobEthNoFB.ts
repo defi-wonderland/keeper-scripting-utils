@@ -1,4 +1,4 @@
-import StrategiesJob from '../../abi/StrategiesJob.json';
+import StrategiesJob from '../abi/StrategiesJob.json';
 import { Address, getNodeUrlWss, getPrivateKey, SUPPORTED_NETWORKS } from '../utils';
 import { BlockListener } from './../subscriptions/blocks';
 import { getMainnetGasType2Parameters, sendTx } from './../transactions';

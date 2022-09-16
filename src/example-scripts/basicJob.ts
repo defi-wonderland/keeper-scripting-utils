@@ -1,4 +1,4 @@
-import BasicJob from '../../abi/BasicJob.json';
+import BasicJob from '../abi/BasicJob.json';
 import { Flashbots } from '../flashbots/flashbots';
 import {
 	createBundlesWithSameTxs,

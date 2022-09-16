@@ -1,4 +1,4 @@
-import StrategiesJob from '../../abi/StrategiesJob.json';
+import StrategiesJob from '../abi/StrategiesJob.json';
 import {
 	getNodeUrlWss,
 	getPrivateKey,

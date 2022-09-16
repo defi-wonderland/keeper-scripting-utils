@@ -1,4 +1,4 @@
-import TendV2KeeperV2ABI from '../../../../abi/TendV2KeeperV2ABI.json';
+import TendV2KeeperV2ABI from '../../../abi/TendV2KeeperV2ABI.json';
 import { Flashbots } from '../../../flashbots/flashbots';
 import { BlockListener } from '../../../subscriptions/blocks';
 import {

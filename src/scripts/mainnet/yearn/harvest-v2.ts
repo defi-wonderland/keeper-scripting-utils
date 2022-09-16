@@ -1,5 +1,5 @@
-import HarvestV2ABI from '../../../../abi/OldHarvestV2.json';
-import StealthRelayerABI from '../../../../abi/StealthRelayer.json';
+import HarvestV2ABI from '../../../abi/OldHarvestV2.json';
+import StealthRelayerABI from '../../../abi/StealthRelayer.json';
 import { Flashbots } from '../../../flashbots/flashbots';
 import { BlockListener } from '../../../subscriptions/blocks';
 import {
