@@ -7,13 +7,15 @@ import { populateTransactions } from '../../src/transactions/populateTransaction
 import * as retryModule from '../../src/transactions/prepareFlashbotBundleForRetry';
 import * as sendAndRetry from '../../src/transactions/sendAndRetryUntilNotWorkable';
 import * as sendToFlashbots from '../../src/transactions/sendBundlesToFlashbots';
-import { getNodeUrl } from '../../src/utils';
 import * as format from '../../src/utils/format';
 import { Block } from '@ethersproject/abstract-provider';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { BigNumber, Contract, providers, Wallet } from 'ethers';
 import { formatBytes32String, hexZeroPad, keccak256, toUtf8Bytes } from 'ethers/lib/utils';
 import { when } from 'jest-when';
+
+const dotenv = require('dotenv');
+dotenv.config();
 
 jest.mock('../../src/transactions/getMainnetGasType2Parameters.ts', () => {
 	return {
@@ -45,8 +47,7 @@ const FAKE_BLOCK: Block = {
 const PRIORITY_FEE = BigNumber.from(10);
 const DYNAMIC_PRIORITY_FEE = BigNumber.from(20);
 const MAX_FEE = BigNumber.from(20);
-const network = 'ethereum';
-const nodeUrl = getNodeUrl(network);
+const nodeUrl = process.env.NODE_URI_ETHEREUM;
 const provider = new providers.JsonRpcProvider(nodeUrl);
 const FAKE_PK = '222333334444555587a6d8b56b68f67111152b3f0ae2c0702b486412a07e80d5';
 const signer = new Wallet(FAKE_PK, provider);
@@ -602,8 +603,7 @@ describe('transactions', () => {
 	});
 
 	describe('sendAndRetryUntilNotWorkable', () => {
-		const network = 'ethereum';
-		const nodeUrl = getNodeUrl(network);
+		const nodeUrl = process.env.NODE_URI_ETHEREUM;
 		const provider = new providers.JsonRpcProvider(nodeUrl);
 		const FAKE_PK = '222333334444555587a6d8b56b68f67111152b3f0ae2c0702b486412a07e80d5';
 		const signer = new Wallet(FAKE_PK, provider);

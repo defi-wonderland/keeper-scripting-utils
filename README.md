@@ -157,7 +157,7 @@ Inside the `utils/keeper.ts` directory, the library provides helper functions to
 
 Although this section may sound self-explanatory, it’s one of the most important concepts to grasp in order to use this library to its maximum potential.
 
-Retrying ****bundles means optimistically creating new batches aimed at consecutive blocks to ensure we don’t miss a block that could potentially be a Flashbots block.
+Retrying bundles means optimistically creating new batches aimed at consecutive blocks to ensure we don’t miss a block that could potentially be a Flashbots block.
 
 For example, we set a burst size of 3, and we send our batch to blocks 100, 101, and 102. There’s a possibility that none of those blocks are Flashbots blocks. This means none of our bundles—and correspondingly the transactions to work the job contained within them—are included.
 To avoid a scenario where we miss working a job due to missing a Flashbots block, we retry—or resend—a new batch after knowing whether the first bundle (the one targetting block 100) of the previous batch was included or not. **We repeat the process until we or another keeper works the job**. Here’s an illustrative example of the process:
