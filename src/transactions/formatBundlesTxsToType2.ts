@@ -1,5 +1,5 @@
+import { BundleBurstGroup, FormatBundlesTxsToType2Props } from '../types';
 import { getMainnetGasType2Parameters } from './getMainnetGasType2Parameters';
-import { BundleBurstGroup, FormatBundlesTxsToType2Props } from '@types';
 
 /**
  * @notice Helper function to format the transactions on every bundle to type 2.

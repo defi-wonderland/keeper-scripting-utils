@@ -1,6 +1,6 @@
+import { GasType2Parameters, GetMainnetGasType2ParametersProps } from '../types';
 import { toGwei } from '../utils';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
-import { GasType2Parameters, GetMainnetGasType2ParametersProps } from '@types';
 import { BigNumber } from 'ethers';
 
 /**

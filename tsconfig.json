@@ -16,10 +16,7 @@
     "types": ["node", "jest"],
     "lib": ["ES6", "DOM"],
     "baseUrl": "./src",
-    "paths": {
-      "@types": ["types"],
-      "@types/*": ["types/*"],
-    }
+    "paths": {}
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]

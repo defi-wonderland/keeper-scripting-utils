@@ -1,6 +1,6 @@
+import { BundleBurstGroup, SendAndRetryUntilNotWorkableProps } from '../types';
 import { prepareFlashbotBundleForRetry, sendBundlesToFlashbots } from './';
 import { makeid } from '@keep3r-network/cli-utils';
-import { BundleBurstGroup, SendAndRetryUntilNotWorkableProps } from '@types';
 
 /**
  * @notice Sends new bundles to different targetBlocks until the job is successfully worked, or another keeper works it.
@@ -10,7 +10,7 @@ import { BundleBurstGroup, SendAndRetryUntilNotWorkableProps } from '@types';
  *
  * @param txs                         The transactions to be retried if nothing is provided in the regenerateTxs parameter.
  * @param provider                    A provider. It will be used to fetch the block in which the first bundles of our batches were not included.
- * @param priorityFee                 The priority fee to be paid to the miner.
+ * @param priorityFeeInWei            The priority fee to be paid to the miner.
  * @param bundles                     The batches of bundles to send to flashbots.
  * @param newBurstSize                Amount of consecutive blocks we want to send the transactions to try to work the job.
  * @param flashbots                   An instance of Flashbots.
@@ -34,7 +34,6 @@ import { BundleBurstGroup, SendAndRetryUntilNotWorkableProps } from '@types';
 
 export async function sendAndRetryUntilNotWorkable(props: SendAndRetryUntilNotWorkableProps): Promise<boolean> {
 	const { bundles, flashbots, isWorkableCheck, staticDebugId, dynamicDebugId } = props;
-
 	const jobIsStillWorkable = await isWorkableCheck();
 
 	if (!jobIsStillWorkable) {

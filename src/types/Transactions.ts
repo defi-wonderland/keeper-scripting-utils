@@ -1,6 +1,6 @@
 import { Flashbots } from '../flashbots/flashbots';
+import { BundleBurstGroup } from '../types';
 import { TransactionRequest, TransactionResponse, Block } from '@ethersproject/abstract-provider';
-import { BundleBurstGroup } from '@types';
 import { Contract, providers, Wallet, Overrides } from 'ethers';
 
 /**

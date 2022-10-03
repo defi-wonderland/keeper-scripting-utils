@@ -1,5 +1,5 @@
 {
-  "name": "keep3r-scripting-utils",
+  "name": "@keep3r-network/keeper-scripting-utils",
   "version": "0.0.1",
   "description": "A library containing helper functions that facilitate scripting for keepers of the Keep3r Network",
   "keywords": [

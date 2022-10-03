@@ -1,6 +1,6 @@
+import { BundleBurstGroup, PrepareFlashbotBundleForRetryProps } from '../types';
 import { formatBundlesTxsToType2, createBundlesWithSameTxs, createBundlesWithDifferentTxs } from './';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
-import { BundleBurstGroup, PrepareFlashbotBundleForRetryProps } from '@types';
 
 /**
  * @notice Helper function to prepare new batch of bundles after previous batch failed.

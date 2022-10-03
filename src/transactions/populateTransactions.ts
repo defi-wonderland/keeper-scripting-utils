@@ -1,5 +1,5 @@
+import { PopulateTransactionsProps } from '../types';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
-import { PopulateTransactionsProps } from '@types';
 
 /**
  * @notice Helper function to populate transactions with their respective data and parameters.

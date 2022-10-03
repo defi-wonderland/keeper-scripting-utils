@@ -1,4 +1,4 @@
-import { BundleBurstGroup, CreateBundlesProps } from '@types';
+import { BundleBurstGroup, CreateBundlesProps } from '../types';
 
 /**
  * @notice Creates amount of bundles equal to burstSize with consecutive target blocks. Each bundle will contain the same transactions.
