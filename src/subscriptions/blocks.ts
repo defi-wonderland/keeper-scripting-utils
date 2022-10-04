@@ -2,6 +2,9 @@ import { Block } from '@ethersproject/abstract-provider';
 import chalk from 'chalk';
 import { providers } from 'ethers';
 import { fromEvent, mergeMap, Observable, Subject, Subscription } from 'rxjs';
+import { UnsubscribeFunction } from 'types';
+
+type CallbackFunction = (block: Block) => Promise<void>;
 
 /**
  * Class in charge of managing the fetching of blocks and how they are provided acoss the app.
@@ -15,7 +18,7 @@ export class BlockListener {
 	private block$ = new Subject<Block>();
 
 	// Array of generated internal subscriptions. Used mainly to be able to unsubscribe from them when needed.
-	private subs: Subscription[] = [];
+	private getBlockSubscription: Subscription | undefined;
 
 	/**
 	 * @param provider - JsonRpc provider that has the methods needed to fetch and listen for new blocks.
@@ -24,7 +27,6 @@ export class BlockListener {
 
 	/**
 	 * This function is able to provide a listener for new incoming blocks with all their data.
-	 * Returns and observable that emits an event every time a new block arrives.
 	 *
 	 * @dev
 	 * Block listener is initialized only if the subscriptions account is zero. Otherwise it will skip the initialization
@@ -34,51 +36,57 @@ export class BlockListener {
 	 *  - One that hooks to the 'block' event of the provider that returns just the number of the new block, and then use
 	 * 		provider.getBlock(blockNumber) method to fetch all the data of that block and push it to block$ observable.
 	 *
-	 * @param debugId - Optional id to help with debugging.
-	 * @returns An observable that emits blocks
+	 * @returns A callback that will be called in every new block
 	 */
-	stream(debugId?: string): Observable<Block> {
+	stream(cb: CallbackFunction): UnsubscribeFunction {
+		// initialize block subscription if necessary, and increase subscribers count
 		if (this.count++ === 0) {
-			this.provider.getBlock('latest').then((block) => {
-				console.info(`${chalk.bgGray('\nblock arrived:', block.number)}\n`);
-				this.block$.next(block);
-			});
-			console.info(chalk.redBright('\n------ START BLOCK LISTENING -----'));
-			const onBlockNumber$ = fromEvent(this.provider, 'block') as Observable<number>;
-			const sub = onBlockNumber$.pipe(mergeMap((blockNumber) => this.provider.getBlock(blockNumber))).subscribe((block) => {
-				console.info(`${chalk.bgGray('\nblock arrived:', block.number)}\n`);
-				this.block$.next(block);
-			});
-			this.subs.push(sub);
+			this.initBlockSubscription();
 		}
-		if (debugId)
-			console.debug(
-				`\nOpen BlockListener subscriptions count: ${chalk.redBright(this.count)} corresponded to ${chalk.green(debugId)}`
-			);
-		else console.debug('\nOpen BlockListener subscriptions count:', chalk.redBright(this.count));
-		return this.block$;
+
+		// log subscribers count
+		this.logSubscribersCount();
+
+		// create a new block subscription that will call the callback for every new block
+		const observable = this.block$.subscribe((block) => cb(block));
+
+		// return an unsubscription function
+		return () => {
+			observable.unsubscribe();
+
+			this.count--;
+			this.logSubscribersCount();
+
+			// uninitialize state if there are no current subscribers
+			if (this.count === 0) {
+				console.info(chalk.redBright('\n------ STOP BLOCK LISTENING -----'));
+
+				this.getBlockSubscription?.unsubscribe();
+				this.provider.removeAllListeners('block');
+			}
+		};
 	}
 
-	/**
-	 * Stops block fetching and remove all the internal subscriptions to blockNumber observable.
-	 *
-	 * @dev
-	 * This will only stop block fetching and subscription to blockNumber IF the amount of subscriptions to block$ observable
-	 * is zero. If amount is zero this means that theres no part of the code actually listening to the block$ observable
-	 * so theres no need for us to keep listening for new blocks incoming.
-	 *
-	 * @param debugId - Optional id to help with debugging.
-	 */
-	stop(debugId?: string): void {
-		if (--this.count === 0) {
-			console.info(chalk.redBright('\n------ STOP BLOCK LISTENING -----'));
-			this.subs.forEach((sub) => sub.unsubscribe());
-			this.provider.removeAllListeners('block');
-		}
-		if (debugId)
-			console.debug(
-				`\nOpen BlockListener subscriptions count: ${chalk.redBright(this.count)} corresponded to ${chalk.green(debugId)}`
-			);
-		else console.debug('\nOpen BlockListener subscriptions count:', chalk.redBright(this.count));
+	private initBlockSubscription(): void {
+		// push latest block to the subject asap
+		this.provider.getBlock('latest').then((block) => {
+			console.info(`${chalk.bgGray('\nblock arrived:', block.number)}\n`);
+			this.block$.next(block);
+		});
+
+		// listen to new blocks from the provider
+		console.info(chalk.redBright('\n------ START BLOCK LISTENING -----'));
+		const onBlockNumber$ = fromEvent(this.provider, 'block') as Observable<number>;
+		const onBlock$ = onBlockNumber$.pipe(mergeMap((blockNumber) => this.provider.getBlock(blockNumber)));
+
+		// push them to the subject as they arrive
+		this.getBlockSubscription = onBlock$.subscribe((block) => {
+			console.info(`${chalk.bgGray('\nblock arrived:', block.number)}\n`);
+			this.block$.next(block);
+		});
+	}
+
+	private logSubscribersCount(): void {
+		console.debug('\nOpen BlockListener subscriptions count:', chalk.redBright(this.count));
 	}
 }
