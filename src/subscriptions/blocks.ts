@@ -1,8 +1,8 @@
+import { UnsubscribeFunction } from '../types/Blocks';
 import { Block } from '@ethersproject/abstract-provider';
 import chalk from 'chalk';
 import { providers } from 'ethers';
 import { fromEvent, mergeMap, Observable, Subject, Subscription } from 'rxjs';
-import { UnsubscribeFunction } from 'types';
 
 type CallbackFunction = (block: Block) => Promise<void>;
 
