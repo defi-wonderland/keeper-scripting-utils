@@ -12,12 +12,12 @@
     "experimentalDecorators": true,
     "resolveJsonModule": true,
     "sourceMap": true,
-    "outDir": "./dist/tsc/",
+    "outDir": "dist",
     "types": ["node", "jest"],
     "lib": ["ES6", "DOM"],
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "paths": {}
   },
-  "include": ["src/**/*.ts", "__tests__/**/*.spec.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
 }
