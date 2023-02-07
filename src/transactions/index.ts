@@ -7,3 +7,4 @@ export * from './sendBundlesToFlashbots';
 export * from './createBundlesWithDifferentTxs';
 export * from './createBundlesWithSameTxs';
 export * from './populateTransactions';
+export * from './isWorkable';
