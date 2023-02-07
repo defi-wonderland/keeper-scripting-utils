@@ -1,4 +1,4 @@
-import { sendTx, checkIsWorkable } from '../transactions';
+import { sendTx } from '../transactions';
 import type { providers, Overrides, Contract } from 'ethers';
 
 /**
@@ -17,13 +17,7 @@ export class MempoolBroadcastor {
 		this.gasLimit = gasLimit;
 	}
 
-	tryToWorkOnMempool = async (
-		jobContract: Contract,
-		workMethod: string,
-		methodArguments: Array<number | string>,
-		isWorkable: boolean
-	) => {
-		if (isWorkable != (await checkIsWorkable(jobContract, methodArguments))) return;
+	tryToWorkOnMempool = async (jobContract: Contract, workMethod: string, methodArguments: Array<number | string>) => {
 		const gasFees = await this.provider.getGasPrice();
 
 		// Create an object containing the fields we would like to add to our transaction.

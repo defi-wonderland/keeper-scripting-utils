@@ -4,7 +4,6 @@ import {
 	sendAndRetryUntilNotWorkable,
 	getMainnetGasType2Parameters,
 	populateTransactions,
-	checkIsWorkable,
 } from '../transactions';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 import type { providers, Wallet, Overrides, Contract } from 'ethers';
@@ -50,7 +49,6 @@ export class FlashbotBroadcastor {
 		methodArguments: Array<number | string>,
 		isWorkable: boolean
 	) {
-		if (isWorkable != (await checkIsWorkable(jobContract, methodArguments))) return;
 		const block = await this.provider.getBlock('latest');
 		const blocksAhead = this.futureBlocks + this.burstSize;
 		const firstBlockOfBatch = block.number + this.futureBlocks;
