@@ -8,7 +8,7 @@ import type { Contract } from 'ethers';
  *
  * @return True if is workable.
  */
-export async function checkIsWorkable(job: Contract, methodArguments: Array<number | string>) {
+export async function checkIsWorkable(job: Contract, methodArguments: Array<number | string>): Promise<boolean> {
 	try {
 		await job.callStatic.work([methodArguments]);
 		return true;

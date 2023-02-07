@@ -7,7 +7,7 @@ import {
 	checkIsWorkable,
 } from '../transactions';
 import { TransactionRequest } from '@ethersproject/abstract-provider';
-import { providers, Wallet, Overrides, Contract } from 'ethers';
+import type { providers, Wallet, Overrides, Contract } from 'ethers';
 
 export class FlashbotBroadcastor {
 	public provider: providers.JsonRpcProvider | providers.WebSocketProvider;

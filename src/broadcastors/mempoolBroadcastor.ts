@@ -1,5 +1,5 @@
 import { sendTx, checkIsWorkable } from '../transactions';
-import { providers, Overrides, Contract } from 'ethers';
+import type { providers, Overrides, Contract } from 'ethers';
 
 export class MempoolBroadcastor {
 	private readonly provider: providers.JsonRpcProvider | providers.WebSocketProvider;
