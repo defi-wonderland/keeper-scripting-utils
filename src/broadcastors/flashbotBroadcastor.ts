@@ -10,8 +10,7 @@ import { TransactionRequest } from '@ethersproject/abstract-provider';
 import type { providers, Wallet, Overrides, Contract } from 'ethers';
 
 /**
- * @notice Creates amount of bundles equal to burstSize with consecutive target blocks. Each bundle will contain a different transaction.
- * 		   An example of the bundle anatomy this function creates is the following: bundle1[tx1], bundle2[tx2], bundle3[tx3].
+ * @notice Creates and populate a transaction for work in a determinated job using flashbots
  *
  * @param provider			The provider which can be Json or Wss
  * @param flashbots			The flashbot that will send the bundle

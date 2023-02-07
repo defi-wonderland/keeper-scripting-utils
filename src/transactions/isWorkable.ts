@@ -3,8 +3,8 @@ import type { Contract } from 'ethers';
 /**
  * @notice Helper function to check if is workable
  *
- * @param contract     An instance of the contract we wish to call.
- * @param methodArguments The arguments of the work function we wish to call.
+ * @param job				An instance of the job we wish to call.
+ * @param methodArguments	The arguments of the work function we wish to call.
  *
  * @return True if is workable.
  */
