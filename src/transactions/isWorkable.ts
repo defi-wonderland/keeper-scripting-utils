@@ -10,7 +10,7 @@ import type { Contract } from 'ethers';
  */
 export async function checkIsWorkable(job: Contract, methodArguments: Array<number | string>): Promise<boolean> {
 	try {
-		await job.callStatic.work([methodArguments]);
+		await job.callStatic.work(...methodArguments);
 		return true;
 	} catch (error: unknown) {
 		if (
