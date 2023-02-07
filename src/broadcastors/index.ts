@@ -1,2 +1,2 @@
-export * from './flashbotsBroadcastor';
+export * from './flashbotBroadcastor';
 export * from './mempoolBroadcastor';
