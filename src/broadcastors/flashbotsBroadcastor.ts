@@ -9,9 +9,20 @@ import {
 import { TransactionRequest } from '@ethersproject/abstract-provider';
 import type { providers, Wallet, Overrides, Contract } from 'ethers';
 
+/**
+ * @notice Creates amount of bundles equal to burstSize with consecutive target blocks. Each bundle will contain a different transaction.
+ * 		   An example of the bundle anatomy this function creates is the following: bundle1[tx1], bundle2[tx2], bundle3[tx3].
+ *
+ * @param provider			The provider which can be Json or Wss
+ * @param flashbots			The flashbot that will send the bundle
+ * @param burstSize 		The burst size
+ * @param futureBlocks		The amount of future blocks.
+ * @param priorityFeeInWei 	The priority fee in wei
+ * @param gasLimit			The gas limit determines the maximum gas that can be spent in the transaction
+ *
+ */
 export class FlashbotBroadcastor {
 	public provider: providers.JsonRpcProvider | providers.WebSocketProvider;
-
 	public flashbots: Flashbots;
 	public burstSize: number;
 	public futureBlocks: number;
@@ -83,7 +94,7 @@ export class FlashbotBroadcastor {
 		const result = await sendAndRetryUntilNotWorkable({
 			txs,
 			provider: this.provider,
-			priorityFeeInWei: this.priorityFeeInWei, // § why do we calculate it in gwei?
+			priorityFeeInWei: this.priorityFeeInWei,
 			signer: txSigner,
 			bundles,
 			newBurstSize: this.burstSize,
