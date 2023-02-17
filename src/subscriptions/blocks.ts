@@ -1,7 +1,6 @@
 import { UnsubscribeFunction } from '../types/Blocks';
-import { Block } from '@ethersproject/abstract-provider';
 import chalk from 'chalk';
-import { providers } from 'ethers';
+import { WebSocketProvider, JsonRpcProvider, Block } from 'ethers';
 import { fromEvent, mergeMap, Observable, Subject, Subscription } from 'rxjs';
 
 type CallbackFunction = (block: Block) => Promise<void>;
@@ -23,7 +22,7 @@ export class BlockListener {
 	/**
 	 * @param provider - JsonRpc provider that has the methods needed to fetch and listen for new blocks.
 	 */
-	constructor(private provider: providers.BaseProvider) {}
+	constructor(private provider: WebSocketProvider | JsonRpcProvider) {}
 
 	/**
 	 * This function is able to provide a listener for new incoming blocks with all their data.
@@ -70,8 +69,9 @@ export class BlockListener {
 	private initBlockSubscription(): void {
 		// push latest block to the subject asap
 		this.provider.getBlock('latest').then((block) => {
-			console.info(`${chalk.bgGray('\nblock arrived:', block.number)}\n`);
-			this.block$.next(block);
+			console.info(`${chalk.bgGray('\nblock arrived:', block!.number)}\n`);
+			// TODO: Block | null cannot be Block
+			this.block$.next(block as unknown as Block);
 		});
 
 		// listen to new blocks from the provider
@@ -81,8 +81,9 @@ export class BlockListener {
 
 		// push them to the subject as they arrive
 		this.getBlockSubscription = onBlock$.subscribe((block) => {
-			console.info(`${chalk.bgGray('\nblock arrived:', block.number)}\n`);
-			this.block$.next(block);
+			console.info(`${chalk.bgGray('\nblock arrived:', block!.number)}\n`);
+			// TODO: Block | null cannot be Block
+			this.block$.next(block as unknown as Block);
 		});
 	}
 

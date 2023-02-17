@@ -1,6 +1,6 @@
 import { BundleBurstGroup, PrepareFlashbotBundleForRetryProps } from '../types';
 import { formatBundlesTxsToType2, createBundlesWithSameTxs, createBundlesWithDifferentTxs } from './';
-import { TransactionRequest } from '@ethersproject/abstract-provider';
+import { ContractTransaction } from 'ethers';
 
 /**
  * @notice Helper function to prepare new batch of bundles after previous batch failed.
@@ -50,7 +50,7 @@ export async function prepareFlashbotBundleForRetry(
 	const firstBlockOfNextBatch = notIncludedBlock + previousBurstSize;
 	const blocksAhead = previousBurstSize + newBurstSize - 1;
 	const latestNonce = await provider.getTransactionCount(signer.address);
-	let newTxs: TransactionRequest[] = txs;
+	let newTxs: ContractTransaction[] = txs;
 
 	if (regenerateTxs) {
 		newTxs = (await regenerateTxs(newBurstSize, firstBlockOfNextBatch)).map((tx) => ({ ...tx, nonce: latestNonce }));

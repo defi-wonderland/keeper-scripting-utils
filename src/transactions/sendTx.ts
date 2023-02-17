@@ -1,6 +1,5 @@
 import { SendTxProps } from '../types';
-import { TransactionResponse } from '@ethersproject/abstract-provider';
-import { providers } from 'ethers';
+import { TransactionReceipt, TransactionResponse } from 'ethers';
 
 /**
  * @notice Sends a transaction.
@@ -12,7 +11,7 @@ import { providers } from 'ethers';
  *
  * @returns A promise of a transaction receipt.
  */
-export async function sendTx(props: SendTxProps): Promise<providers.TransactionReceipt> {
+export async function sendTx(props: SendTxProps): Promise<TransactionReceipt> {
 	const { contractCall, explorerUrl } = props;
 	const tx: TransactionResponse = await contractCall();
 
@@ -22,5 +21,6 @@ export async function sendTx(props: SendTxProps): Promise<providers.TransactionR
 		console.log(`Transaction submitted: ${tx.hash}`);
 	}
 
-	return await tx.wait();
+	// TODO TxReceipt | null cannot be TxReceipt
+	return (await tx.wait()) as unknown as TransactionReceipt;
 }

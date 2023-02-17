@@ -1,5 +1,5 @@
 import { PopulateTransactionsProps } from '../types';
-import { TransactionRequest } from '@ethersproject/abstract-provider';
+import { ContractTransaction } from 'ethers';
 
 /**
  * @notice Helper function to populate transactions with their respective data and parameters.
@@ -16,14 +16,14 @@ import { TransactionRequest } from '@ethersproject/abstract-provider';
  *
  * @return Array of populated transactions.
  */
-export async function populateTransactions(props: PopulateTransactionsProps): Promise<TransactionRequest[]> {
+export async function populateTransactions(props: PopulateTransactionsProps): Promise<ContractTransaction[]> {
 	const { contract, functionName, functionArgs, chainId } = props;
 
 	// Second map is due to flashbots having trouble inferring chainId from signer, so we add it explicitly
-	const txs: TransactionRequest[] = (
+	const txs: ContractTransaction[] = (
 		await Promise.all(
 			functionArgs.map((args) => {
-				return contract.populateTransaction[functionName](...args, {
+				return contract[functionName].populateTransaction(...args, {
 					...props.options,
 				});
 			})

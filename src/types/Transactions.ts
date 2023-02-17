@@ -1,7 +1,15 @@
 import { Flashbots } from '../flashbots/flashbots';
 import { BundleBurstGroup } from '../types';
-import { TransactionRequest, TransactionResponse, Block } from '@ethersproject/abstract-provider';
-import { Contract, providers, Wallet, Overrides } from 'ethers';
+import {
+	Contract,
+	WebSocketProvider,
+	JsonRpcProvider,
+	Wallet,
+	Overrides,
+	TransactionResponse,
+	Block,
+	ContractTransaction,
+} from 'ethers';
 
 /**
  * @notice Union type used to enforce the user to specify what bundle creation function to use when regenerating a bundle.
@@ -44,15 +52,15 @@ export interface RecalculatePriorityFeeInWeiReturnValue {
  *
  */
 export interface SendAndRetryUntilNotWorkableProps {
-	txs: TransactionRequest[];
-	provider: providers.BaseProvider;
+	txs: ContractTransaction[];
+	provider: WebSocketProvider | JsonRpcProvider;
 	priorityFeeInWei: number;
 	bundles: BundleBurstGroup[];
 	newBurstSize: number;
 	flashbots: Flashbots;
 	signer: Wallet;
 	isWorkableCheck: () => Promise<boolean>;
-	regenerateTxs?: (burstSize: number, lastBlockNumberUsed: number) => Promise<TransactionRequest[]>;
+	regenerateTxs?: (burstSize: number, lastBlockNumberUsed: number) => Promise<ContractTransaction[]>;
 	bundleRegenerationMethod?: BundleCreationType;
 	recalculatePriorityFeeInWei?: (
 		updatedBundles: BundleBurstGroup[],
@@ -84,14 +92,14 @@ export interface SendAndRetryUntilNotWorkableProps {
  *
  */
 export interface PrepareFlashbotBundleForRetryProps {
-	txs: TransactionRequest[];
-	provider: providers.BaseProvider;
+	txs: ContractTransaction[];
+	provider: WebSocketProvider | JsonRpcProvider;
 	notIncludedBlock: number;
 	priorityFeeInWei: number;
 	previousBurstSize: number;
 	newBurstSize: number;
 	signer: Wallet;
-	regenerateTxs?: (burstSize: number, lastBlockNumberUsed: number) => Promise<TransactionRequest[]>;
+	regenerateTxs?: (burstSize: number, lastBlockNumberUsed: number) => Promise<ContractTransaction[]>;
 	bundleRegenerationMethod?: BundleCreationType;
 	recalculatePriorityFeeInWei?: (
 		updatedBundles: BundleBurstGroup[],
@@ -110,7 +118,7 @@ export interface PrepareFlashbotBundleForRetryProps {
  * 							firstBlockOfBatch.
  */
 export interface CreateBundlesProps {
-	unsignedTxs: TransactionRequest[];
+	unsignedTxs: ContractTransaction[];
 	burstSize: number;
 	firstBlockOfBatch: number;
 }
@@ -132,7 +140,7 @@ export interface PopulateTransactionsProps {
 	contract: Contract;
 	functionName: string;
 	functionArgs: any[][];
-	chainId: number;
+	chainId: bigint;
 	options?: Overrides;
 }
 

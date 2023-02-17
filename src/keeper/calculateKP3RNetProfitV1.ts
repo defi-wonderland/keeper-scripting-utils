@@ -1,4 +1,4 @@
-import { BigNumber, Contract, providers } from 'ethers';
+import { BigNumberish, Contract, WebSocketProvider, JsonRpcProvider } from 'ethers';
 
 const KP3RV1_KEEPER_WORK_EVENT_TOPIC = '0x3cda93551ad083704be19fabbd7c3eb94d88f6e72ff221bdea9017e52e4144e8';
 
@@ -18,22 +18,23 @@ const KP3RV1_KEEPER_WORK_EVENT_TOPIC = '0x3cda93551ad083704be19fabbd7c3eb94d88f6
 export const calculateKP3RNetProfitV1 = async (
 	txHash: string,
 	keep3rHelper: Contract,
-	provider: providers.BaseProvider
-): Promise<BigNumber | void> => {
+	provider: WebSocketProvider | JsonRpcProvider
+): Promise<BigNumberish | void> => {
 	const txReceipt = await provider.getTransactionReceipt(txHash);
-	const gasPrice = txReceipt.effectiveGasPrice;
-	const gasUsed = txReceipt.gasUsed;
-	const txCostInEth = gasPrice.mul(gasUsed);
-	const txCostInKp3r = await keep3rHelper.quote(txCostInEth);
+	const gasPrice = txReceipt!.gasPrice;
+	const gasUsed = txReceipt!.gasUsed;
+	const txCostInEth = gasPrice * gasUsed;
+	const txCostInKp3r: BigNumberish = await keep3rHelper.quote(txCostInEth);
 
-	const tx = txReceipt.logs.find((log) => log.topics[0] === KP3RV1_KEEPER_WORK_EVENT_TOPIC);
+	const tx = txReceipt!.logs.find((log) => log.topics[0] === KP3RV1_KEEPER_WORK_EVENT_TOPIC);
 
 	if (!tx) return console.log('Could not find a matching event. Are you certain this job is registered in Keep3rV1?');
 
+	// TODO: parse event with ethers (instead of substring)
 	const paymentString = '0x' + tx.data.substring(66, 132);
-	const parsedPayment = BigNumber.from(paymentString);
+	const parsedPayment = BigInt(paymentString);
 
-	const netProfit = parsedPayment.sub(txCostInKp3r);
+	const netProfit = parsedPayment - BigInt(txCostInKp3r);
 
 	return netProfit;
 };

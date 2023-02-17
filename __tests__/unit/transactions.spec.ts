@@ -8,10 +8,18 @@ import * as retryModule from '../../src/transactions/prepareFlashbotBundleForRet
 import * as sendAndRetry from '../../src/transactions/sendAndRetryUntilNotWorkable';
 import * as sendToFlashbots from '../../src/transactions/sendBundlesToFlashbots';
 import * as format from '../../src/utils/format';
-import { Block } from '@ethersproject/abstract-provider';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
-import { BigNumber, Contract, providers, Wallet } from 'ethers';
-import { formatBytes32String, hexZeroPad, keccak256, toUtf8Bytes } from 'ethers/lib/utils';
+import {
+	Contract,
+	JsonRpcProvider,
+	Wallet,
+	Block,
+	encodeBytes32String,
+	keccak256,
+	toUtf8Bytes,
+	zeroPadBytes,
+	ContractTransaction,
+} from 'ethers';
 import { when } from 'jest-when';
 
 const dotenv = require('dotenv');
@@ -40,29 +48,32 @@ const mockSendBundlesToFlashbots = jest.spyOn(sendToFlashbots, 'sendBundlesToFla
 const mockSendAndRetryUntilNotWorkable = jest.spyOn(sendAndRetry, 'sendAndRetryUntilNotWorkable');
 
 const FAKE_BLOCK: Block = {
-	baseFeePerGas: BigNumber.from(10),
-	gasUsed: BigNumber.from(10_000),
-	gasLimit: BigNumber.from(10_000_000),
+	baseFeePerGas: BigInt(10),
+	gasUsed: BigInt(10_000),
+	gasLimit: BigInt(10_000_000),
 } as Block;
-const PRIORITY_FEE = BigNumber.from(10);
-const DYNAMIC_PRIORITY_FEE = BigNumber.from(20);
-const MAX_FEE = BigNumber.from(20);
+const PRIORITY_FEE = BigInt(10);
+const DYNAMIC_PRIORITY_FEE = BigInt(20);
+const MAX_FEE = BigInt(20);
 const nodeUrl = process.env.NODE_URI_ETHEREUM;
-const provider = new providers.JsonRpcProvider(nodeUrl);
+const provider = new JsonRpcProvider(nodeUrl);
 const FAKE_PK = '222333334444555587a6d8b56b68f67111152b3f0ae2c0702b486412a07e80d5';
 const signer = new Wallet(FAKE_PK, provider);
 const relayer = 'https://relay.flashbots.net';
 
-const fakeUnsignedTx = {
+const fakeUnsignedTx: ContractTransaction = {
 	to: '0x57B067e4E27558FE2c60fCE86941011cB5F5A4FD',
+	data: '',
 };
 
 const fakeUnsignedTx2 = {
 	to: '0x57B067e4E27558FE2c60fCE86941011cB5F5A4FE',
+	data: '',
 };
 
 const fakeUnsignedTxType2 = {
 	to: '0x57B067e4E27558FE2c60fCE86941011cB5F5A4FD',
+	data: '',
 	type: 2,
 	maxPriorityFeePerGas: PRIORITY_FEE,
 	maxFeePerGas: MAX_FEE,
@@ -70,6 +81,7 @@ const fakeUnsignedTxType2 = {
 
 const fakeUnsignedTxType2Two = {
 	to: '0x57B067e4E27558FE2c60fCE86941011cB5F5A4FE',
+	data: '',
 	type: 2,
 	maxPriorityFeePerGas: PRIORITY_FEE,
 	maxFeePerGas: MAX_FEE,
@@ -77,6 +89,7 @@ const fakeUnsignedTxType2Two = {
 
 const fakeUnsignedTxType2Three = {
 	to: '0x57B067e4E27558FE2c60fCE86941011cB5S5A4FE',
+	data: '',
 	type: 2,
 	maxPriorityFeePerGas: PRIORITY_FEE,
 	nonce: 0,
@@ -85,6 +98,7 @@ const fakeUnsignedTxType2Three = {
 
 const fakeUnsignedTxType2Four = {
 	to: '0x57B067e4E27558FE2c60fCE86941011cBAF5A4FE',
+	data: '',
 	type: 2,
 	maxPriorityFeePerGas: PRIORITY_FEE,
 	nonce: 0,
@@ -93,6 +107,7 @@ const fakeUnsignedTxType2Four = {
 
 const fakeUnsignedTxType2Five = {
 	to: '0x57B067e4E27558FE2c60fCE86941011cB5S5A4FE',
+	data: '',
 	type: 2,
 	maxPriorityFeePerGas: DYNAMIC_PRIORITY_FEE,
 	nonce: 0,
@@ -101,6 +116,7 @@ const fakeUnsignedTxType2Five = {
 
 const fakeUnsignedTxType2Six = {
 	to: '0x57B067e4E27558FE2c60fCE86941011cBAF5A4FE',
+	data: '',
 	type: 2,
 	maxPriorityFeePerGas: DYNAMIC_PRIORITY_FEE,
 	nonce: 0,
@@ -264,7 +280,7 @@ describe('transactions', () => {
 
 	describe('getMainnetGasType2Parameters', () => {
 		const priorityFeeInWei = 10;
-		const mockFlashbotsResponse = BigNumber.from('1000');
+		const mockFlashbotsResponse = BigInt('1000');
 		it('should throw an error if the block does not have the base fee', async () => {
 			const emptyBlock = {} as Block;
 			const priorityFeeInWei = 10;
@@ -329,7 +345,7 @@ describe('transactions', () => {
 			when(FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock).mockReturnValue(mockFlashbotsResponse);
 
 			const priorityFeeInGwei = format.toGwei(priorityFeeInWei);
-			const maxFeePerGas = priorityFeeInGwei.add(mockFlashbotsResponse);
+			const maxFeePerGas = priorityFeeInGwei + mockFlashbotsResponse;
 
 			const fnCall = gasModule.getMainnetGasType2Parameters({ block: FAKE_BLOCK, blocksAhead: 2, priorityFeeInWei });
 			expect(fnCall.maxFeePerGas).toEqual(maxFeePerGas);
@@ -341,7 +357,7 @@ describe('transactions', () => {
 			when(FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock).mockReturnValue(mockFlashbotsResponse);
 
 			const priorityFeeInGwei = format.toGwei(priorityFeeInWei);
-			const maxFeePerGas = priorityFeeInGwei.add(mockFlashbotsResponse);
+			const maxFeePerGas = priorityFeeInGwei + mockFlashbotsResponse;
 			expect(gasModule.getMainnetGasType2Parameters({ block: FAKE_BLOCK, blocksAhead: 2, priorityFeeInWei })).toEqual({
 				priorityFeeInGwei,
 				maxFeePerGas,
@@ -388,12 +404,12 @@ describe('transactions', () => {
 
 	describe('populateTransactions', () => {
 		const jobAddress = '0x95416069ad8756f123Ad48fDB6fede7179b9Ecae';
-		const chainId = 1;
-		const mockArg = formatBytes32String('KEEP3R');
+		const chainId = BigInt(1);
+		const mockArg = encodeBytes32String('KEEP3R');
 		const makerJobAbiLike = ['function workable(bytes32 network) view returns (bool canWork, bytes memory args)'];
 		const mockContract = new Contract(jobAddress, makerJobAbiLike);
 		const expectedFnSelector = keccak256(toUtf8Bytes('workable(bytes32)')).substring(0, 10);
-		const expectedData = hexZeroPad(mockArg, 32).substring(2);
+		const expectedData = zeroPadBytes(mockArg, 32).substring(2);
 		const expectedCallData = expectedFnSelector.concat(expectedData);
 		const expectedTx = {
 			data: expectedCallData,
@@ -404,7 +420,7 @@ describe('transactions', () => {
 			data: expectedCallData,
 			to: jobAddress,
 			chainId,
-			gasLimit: BigNumber.from(10_000_000),
+			gasLimit: BigInt(10_000_000),
 		};
 
 		it('should return a single populated transaction when passing one function argument', async () => {
@@ -458,7 +474,7 @@ describe('transactions', () => {
 		const previousBurstSize = 3;
 
 		it('should return false if firstBundleBlock is undefined', async () => {
-			const latestBlock = (await provider.getBlock('latest')).number;
+			const latestBlock = (await provider.getBlock('latest'))!.number;
 			const fnCall = retryModule.prepareFlashbotBundleForRetry({
 				newBurstSize: 2,
 				notIncludedBlock: latestBlock + 10,
@@ -473,7 +489,7 @@ describe('transactions', () => {
 		});
 
 		it('should return false if cancelBatchAndRestart is true', async () => {
-			const latestBlock = (await provider.getBlock('latest')).number;
+			const latestBlock = (await provider.getBlock('latest'))!.number;
 			const fnCall = retryModule.prepareFlashbotBundleForRetry({
 				newBurstSize: 2,
 				notIncludedBlock: latestBlock + 10,
@@ -493,7 +509,7 @@ describe('transactions', () => {
 			expect(await fnCall).toStrictEqual(false);
 		});
 		it('should prepare a new bundle with same transaction and updated target blocks', async () => {
-			const latestBlock = (await provider.getBlock('latest')).number;
+			const latestBlock = (await provider.getBlock('latest'))!.number;
 			const recentBlock = latestBlock - 50;
 			const firstBlockOfNextBatch = recentBlock + 3;
 			const newBundle = await retryModule.prepareFlashbotBundleForRetry({
@@ -514,7 +530,7 @@ describe('transactions', () => {
 			expect(newBundle).toStrictEqual(expectedBundle);
 		});
 		it('should prepare a new bundle with different transactions and updated target blocks', async () => {
-			const latestBlock = (await provider.getBlock('latest')).number;
+			const latestBlock = (await provider.getBlock('latest'))!.number;
 			const recentBlock = latestBlock - 50;
 			const firstBlockOfNextBatch = recentBlock + 3;
 
@@ -537,7 +553,7 @@ describe('transactions', () => {
 			expect(newBundle).toStrictEqual(expectedBundle);
 		});
 		it('should prepare a new bundle with new transactions and updated target blocks', async () => {
-			const latestBlock = (await provider.getBlock('latest')).number;
+			const latestBlock = (await provider.getBlock('latest'))!.number;
 			const recentBlock = latestBlock - 50;
 			const firstBlockOfNextBatch = recentBlock + 3;
 
@@ -563,13 +579,13 @@ describe('transactions', () => {
 			expect(newBundle).toStrictEqual(expectedBundle);
 		});
 		it('should prepare a new bundle with new transactions and new priority fee', async () => {
-			const latestBlock = (await provider.getBlock('latest')).number;
+			const latestBlock = (await provider.getBlock('latest'))!.number;
 			const recentBlock = latestBlock - 50;
 			const previousBurstSize = 3;
 			const firstBlockOfNextBatch = recentBlock + 3;
 
 			mockGetMainnetGasType2Parameters.mockReturnValue({
-				priorityFeeInGwei: BigNumber.from(20),
+				priorityFeeInGwei: BigInt(20),
 				maxFeePerGas: MAX_FEE,
 			});
 
@@ -604,7 +620,7 @@ describe('transactions', () => {
 
 	describe('sendAndRetryUntilNotWorkable', () => {
 		const nodeUrl = process.env.NODE_URI_ETHEREUM;
-		const provider = new providers.JsonRpcProvider(nodeUrl);
+		const provider = new JsonRpcProvider(nodeUrl);
 		const FAKE_PK = '222333334444555587a6d8b56b68f67111152b3f0ae2c0702b486412a07e80d5';
 		const signer = new Wallet(FAKE_PK, provider);
 		const mockFnFalse = async () => false;
@@ -642,7 +658,7 @@ describe('transactions', () => {
 			expect(await fnCall).toBe(true);
 		});
 		it('should return false if retryBundle returns false', async () => {
-			const latestBlock = (await provider.getBlock('latest')).number;
+			const latestBlock = (await provider.getBlock('latest'))!.number;
 			const unexistentBlock = latestBlock + 10;
 			const bundles = {
 				targetBlock: unexistentBlock,
@@ -665,7 +681,7 @@ describe('transactions', () => {
 			expect(await fnCall).toBe(false);
 		});
 		it('should return false if retryBundle returns false', async () => {
-			const latestBlock = (await provider.getBlock('latest')).number;
+			const latestBlock = (await provider.getBlock('latest'))!.number;
 			const bundles = {
 				targetBlock: latestBlock,
 				txs: [fakeUnsignedTx],

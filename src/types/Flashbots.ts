@@ -1,4 +1,4 @@
-import { TransactionRequest } from '@ethersproject/abstract-provider';
+import { ContractTransaction } from 'ethers';
 
 /**
  * @notice A BundleBurstGroup includes all properties of a valid Flashbot bundle.
@@ -9,5 +9,5 @@ import { TransactionRequest } from '@ethersproject/abstract-provider';
 
 export interface BundleBurstGroup {
 	targetBlock: number;
-	txs: TransactionRequest[];
+	txs: ContractTransaction[];
 }

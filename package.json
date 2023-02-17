@@ -77,12 +77,12 @@
     "*.ts": "yarn lint"
   },
   "dependencies": {
-    "@flashbots/ethers-provider-bundle": "0.5.0",
+    "@flashbots/ethers-provider-bundle": "0.6.1",
     "@keep3r-network/cli-utils": "1.0.0",
     "axios": "0.27.2",
     "chalk": "4.1.1",
     "dotenv": "16.0.1",
-    "ethers": "5.6.9",
+    "ethers": "6.0.3",
     "fs-extra": "10.0.0",
     "rxjs": "7.5.6",
     "winston": "3.3.3",

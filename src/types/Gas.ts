@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers';
+import { BigNumberish } from 'ethers';
 
 /**
  * @notice The required gas parameters to include in a transaction of type 2.
@@ -8,6 +8,6 @@ import { BigNumber } from 'ethers';
  */
 
 export interface GasType2Parameters {
-	priorityFeeInGwei: BigNumber;
-	maxFeePerGas: BigNumber;
+	priorityFeeInGwei: bigint;
+	maxFeePerGas: bigint;
 }

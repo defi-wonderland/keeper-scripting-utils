@@ -1,5 +1,5 @@
-import { TransactionRequest } from '@ethersproject/abstract-provider';
-import { Signer } from '@ethersproject/abstract-signer';
+// TODO: deprecate ethersproject
+import { BaseProvider } from '@ethersproject/providers';
 import {
 	FlashbotsBundleProvider,
 	FlashbotsBundleRawTransaction,
@@ -7,7 +7,7 @@ import {
 	SimulationResponse,
 } from '@flashbots/ethers-provider-bundle';
 import chalk from 'chalk';
-import { providers } from 'ethers';
+import { JsonRpcProvider, WebSocketProvider, Signer, ContractTransaction } from 'ethers';
 
 /**
  * Class in charge of simulating and sending bundles through the different private relayer providers.
@@ -51,14 +51,14 @@ export class Flashbots {
 	static async init(
 		txSigner: Signer,
 		bundleSigner: Signer,
-		provider: providers.JsonRpcProvider | providers.WebSocketProvider,
+		provider: JsonRpcProvider | WebSocketProvider,
 		flashbotRelayers: string[],
 		simulateBundle: boolean,
 		chainId: number
 	): Promise<Flashbots> {
 		const flashbotsProviders = await Promise.all(
 			flashbotRelayers.map((relay) => {
-				return FlashbotsBundleProvider.create(provider, bundleSigner, relay, chainId);
+				return FlashbotsBundleProvider.create(provider as unknown as BaseProvider, bundleSigner, relay, chainId);
 			})
 		);
 
@@ -79,7 +79,7 @@ export class Flashbots {
 	 * @returns 	A boolean that says if the bundle was included successfully or not.
 	 */
 	async send(
-		unsignedTxs: TransactionRequest[],
+		unsignedTxs: ContractTransaction[],
 		targetBlock: number,
 		staticDebugId?: string,
 		dynamicDebugId?: string

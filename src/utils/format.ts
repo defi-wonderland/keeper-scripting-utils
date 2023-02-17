@@ -1,5 +1,5 @@
-import { BigNumber, utils } from 'ethers';
+import { parseUnits } from 'ethers';
 
-export const toGwei = (value: number): BigNumber => {
-	return utils.parseUnits(value.toString(), 'gwei');
+export const toGwei = (value: number): bigint => {
+	return parseUnits(value.toString(), 'gwei');
 };

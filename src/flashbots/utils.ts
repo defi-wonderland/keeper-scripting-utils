@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { solidityPackedKeccak256 } from 'ethers';
 
 export function makeid(length: number): string {
 	let result = '';
@@ -11,5 +11,5 @@ export function makeid(length: number): string {
 }
 
 export function getStealthHash(): string {
-	return ethers.utils.solidityKeccak256(['string'], [makeid(32)]);
+	return solidityPackedKeccak256(['string'], [makeid(32)]);
 }

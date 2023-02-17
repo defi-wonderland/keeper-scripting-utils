@@ -1,7 +1,7 @@
 import { GasType2Parameters, GetMainnetGasType2ParametersProps } from '../types';
 import { toGwei } from '../utils';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
-import { BigNumber } from 'ethers';
+import { BigNumberish } from 'ethers';
 
 /**
  * @notice Helper function to calculate the maxFeePerGas parameter required for a transaction of type 2.
@@ -15,7 +15,7 @@ import { BigNumber } from 'ethers';
  * @return An object containing the provided priority fee in gwei and the calculated maxFeePerGas.
  */
 export function getMainnetGasType2Parameters(props: GetMainnetGasType2ParametersProps): GasType2Parameters {
-	let maxBaseFee: BigNumber;
+	let maxBaseFee: BigNumberish;
 
 	const { block, blocksAhead, priorityFeeInWei } = props;
 
@@ -24,12 +24,12 @@ export function getMainnetGasType2Parameters(props: GetMainnetGasType2Parameters
 	}
 
 	if (blocksAhead == 0 || blocksAhead == 1) {
-		maxBaseFee = FlashbotsBundleProvider.getBaseFeeInNextBlock(block.baseFeePerGas, block.gasUsed, block.gasLimit);
+		maxBaseFee = BigInt(FlashbotsBundleProvider.getBaseFeeInNextBlock(block.baseFeePerGas, block.gasUsed, block.gasLimit));
 	} else {
-		maxBaseFee = FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksAhead);
+		maxBaseFee = BigInt(FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksAhead));
 	}
 	const priorityFeeInGwei = toGwei(priorityFeeInWei);
-	const maxFeePerGas = priorityFeeInGwei.add(maxBaseFee);
+	const maxFeePerGas = priorityFeeInGwei + maxBaseFee;
 	return {
 		priorityFeeInGwei,
 		maxFeePerGas,
