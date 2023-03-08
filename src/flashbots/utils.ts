@@ -13,3 +13,17 @@ export function makeid(length: number): string {
 export function getStealthHash(): string {
 	return ethers.utils.solidityKeccak256(['string'], [makeid(32)]);
 }
+
+export function calculateTargetBlocks(burstSize: number, nextBlock: number): number[] {
+	if (burstSize === 0 || burstSize === 1) {
+		return [nextBlock];
+	}
+
+	const targetBlocks: number[] = [];
+
+	for (let i = 0; i < burstSize; i++) {
+		targetBlocks[i] = nextBlock + i;
+	}
+
+	return targetBlocks;
+}

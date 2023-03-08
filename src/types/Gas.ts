@@ -8,6 +8,6 @@ import { BigNumber } from 'ethers';
  */
 
 export interface GasType2Parameters {
-	priorityFeeInGwei: BigNumber;
+	priorityFee: BigNumber;
 	maxFeePerGas: BigNumber;
 }
