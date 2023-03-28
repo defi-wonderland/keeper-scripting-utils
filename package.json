@@ -1,6 +1,6 @@
 {
   "name": "@keep3r-network/keeper-scripting-utils",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A library containing helper functions that facilitate scripting for keepers of the Keep3r Network",
   "keywords": [
     "ethereum",
