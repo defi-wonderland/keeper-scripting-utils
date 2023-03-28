@@ -1,8 +1,6 @@
-import { UnsubscribeFunction } from '../types/Blocks';
 import { Block } from '@ethersproject/abstract-provider';
 import chalk from 'chalk';
 import { providers } from 'ethers';
-import { fromEvent, mergeMap, Observable, Subject, Subscription } from 'rxjs';
 
 type CallbackFunction = (block: Block) => Promise<void>;
 
@@ -11,15 +9,6 @@ type CallbackFunction = (block: Block) => Promise<void>;
  *
  */
 export class BlockListener {
-	// Amount of live subscriptions to block$ observable.
-	private count = 0;
-
-	// Observable in charge of emitting and providing new Blocks.
-	private block$ = new Subject<Block>();
-
-	// Array of generated internal subscriptions. Used mainly to be able to unsubscribe from them when needed.
-	private getBlockSubscription: Subscription | undefined;
-
 	/**
 	 * @param provider - JsonRpc provider that has the methods needed to fetch and listen for new blocks.
 	 */
@@ -36,57 +25,53 @@ export class BlockListener {
 	 *  - One that hooks to the 'block' event of the provider that returns just the number of the new block, and then use
 	 * 		provider.getBlock(blockNumber) method to fetch all the data of that block and push it to block$ observable.
 	 *
-	 * @returns A callback that will be called in every new block
+	 * @param cb Callback function which will receive each new block
+	 * @param intervalDelay Get next block after X seconds of sleep. This number must be bigger than the time between 2 blocks.
+	 * @param blockDelay After getting a new block, wait X seconds before calling the callback function.
+	 *                   This is useful for descentralised node infrastructures which may need some time to sync, as Ankr.
 	 */
-	stream(cb: CallbackFunction): UnsubscribeFunction {
-		// initialize block subscription if necessary, and increase subscribers count
-		if (this.count++ === 0) {
-			this.initBlockSubscription();
-		}
+	stream(cb: CallbackFunction, intervalDelay = 0, blockDelay = 0): void {
+		const start = async () => {
+			// save latest block number, in order to avoid old block dumps
+			let latestBlockNumber = await this.provider.getBlockNumber();
 
-		// log subscribers count
-		this.logSubscribersCount();
+			console.info(chalk.redBright(`\nWaiting for next block, latest block: ${latestBlockNumber}`));
 
-		// create a new block subscription that will call the callback for every new block
-		const observable = this.block$.subscribe((block) => cb(block));
+			// listen for next block
+			this.provider.on('block', async (blockNumber) => {
+				// avoid having old dump of blocks
+				if (blockNumber <= latestBlockNumber) return;
+				latestBlockNumber = blockNumber;
 
-		// return an unsubscription function
-		return () => {
-			observable.unsubscribe();
+				if (intervalDelay > 0) {
+					// stop listening to new blocks
+					this.stop();
+				}
 
-			this.count--;
-			this.logSubscribersCount();
+				// delay the block arrival a bit, for ankr to have time to sync
+				setTimeout(async () => {
+					// double check that the block to process is actually the latest
+					if (blockNumber < latestBlockNumber) return;
 
-			// uninitialize state if there are no current subscribers
-			if (this.count === 0) {
-				console.info(chalk.redBright('\n------ STOP BLOCK LISTENING -----'));
-
-				this.getBlockSubscription?.unsubscribe();
-				this.provider.removeAllListeners('block');
-			}
+					console.info(`${chalk.bgGray('block arrived:', blockNumber)}\n`);
+					// get block data
+					const block = await this.provider.getBlock(blockNumber);
+					// call the given callback with the block data
+					await cb(block);
+				}, blockDelay);
+			});
 		};
+
+		// get next block immediately
+		start();
+
+		if (intervalDelay > 0) {
+			// get next block every {intervalDelay} of sleep
+			setInterval(start, intervalDelay);
+		}
 	}
 
-	private initBlockSubscription(): void {
-		// push latest block to the subject asap
-		this.provider.getBlock('latest').then((block) => {
-			console.info(`${chalk.bgGray('\nblock arrived:', block.number)}\n`);
-			this.block$.next(block);
-		});
-
-		// listen to new blocks from the provider
-		console.info(chalk.redBright('\n------ START BLOCK LISTENING -----'));
-		const onBlockNumber$ = fromEvent(this.provider, 'block') as Observable<number>;
-		const onBlock$ = onBlockNumber$.pipe(mergeMap((blockNumber) => this.provider.getBlock(blockNumber)));
-
-		// push them to the subject as they arrive
-		this.getBlockSubscription = onBlock$.subscribe((block) => {
-			console.info(`${chalk.bgGray('\nblock arrived:', block.number)}\n`);
-			this.block$.next(block);
-		});
-	}
-
-	private logSubscribersCount(): void {
-		console.debug('\nOpen BlockListener subscriptions count:', chalk.redBright(this.count));
+	stop(): void {
+		this.provider.removeAllListeners('block');
 	}
 }
