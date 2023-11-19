@@ -87,7 +87,7 @@ export class StealthBroadcastor {
 
 			console.log('Transaction populated successfully. Sending bundle...');
 
-			await sendAndHandleResponse({ flashbotsProvider: this.flashbotsProvider, privateTx, maxBlockNumber: targetBlock });
+			sendAndHandleResponse({ flashbotsProvider: this.flashbotsProvider, privateTx, maxBlockNumber: targetBlock });
 		}
 	}
 }
