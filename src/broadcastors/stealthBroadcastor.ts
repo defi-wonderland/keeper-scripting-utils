@@ -1,9 +1,8 @@
 import { calculateTargetBlocks, getStealthHash } from '../flashbots';
-import { getMainnetGasType2Parameters, populateTx } from '../transactions';
+import { getMainnetGasType2Parameters, populateTx, sendBundle } from '../transactions';
 import type { TransactionRequest } from '@ethersproject/abstract-provider';
 import type { FlashbotsBundleTransaction, FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import type { Wallet, Overrides, Contract } from 'ethers';
-import { sendBundle } from 'transactions/sendBundle';
 import { BroadcastorProps } from 'types';
 
 /**
