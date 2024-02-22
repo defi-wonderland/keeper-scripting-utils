@@ -58,6 +58,19 @@ export interface SendAndHandleResponseProps {
 }
 
 /**
+ * @notice SendBundleProps includes all parameters required to call SendBundleProps function
+ *
+ * @param flashbotsProvider A flashbots provider.
+ * @param privateTx         The private flashbots transactions to send.
+ * @param targetBlockNumber The block number at which flashbots will try to include the transaction.
+ */
+export interface SendBundleProps {
+	flashbotsProvider: FlashbotsBundleProvider;
+	privateTxs: FlashbotsBundleTransaction[];
+	targetBlockNumber: number;
+}
+
+/**
  * @notice GetGasParametersNextBlockProps includes all base properties required to compute the maxFeePerGas property
  * 		   in order to format a transaction to type 2.
  *

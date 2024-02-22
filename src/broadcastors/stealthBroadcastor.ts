@@ -1,8 +1,9 @@
 import { calculateTargetBlocks, getStealthHash } from '../flashbots';
-import { getMainnetGasType2Parameters, populateTx, sendAndHandleResponse } from '../transactions';
+import { getMainnetGasType2Parameters, populateTx } from '../transactions';
 import type { TransactionRequest } from '@ethersproject/abstract-provider';
 import type { FlashbotsBundleTransaction, FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import type { Wallet, Overrides, Contract } from 'ethers';
+import { sendBundle } from 'transactions/sendBundle';
 import { BroadcastorProps } from 'types';
 
 /**
@@ -49,7 +50,7 @@ export class StealthBroadcastor {
 
 		console.log(`Attempting to work strategy statically succeeded. Preparing real transaction...`);
 
-		const nextBlock = block.number;
+		const nextBlock = block.number + 1;
 
 		const targetBlocks = calculateTargetBlocks(this.burstSize, nextBlock);
 
@@ -70,7 +71,6 @@ export class StealthBroadcastor {
 			maxPriorityFeePerGas: priorityFee,
 			type: 2,
 		};
-
 		for (const targetBlock of targetBlocks) {
 			const tx: TransactionRequest = await populateTx({
 				contract: this.stealthRelayer,
@@ -87,7 +87,7 @@ export class StealthBroadcastor {
 
 			console.log('Transaction populated successfully. Sending bundle...');
 
-			await sendAndHandleResponse({ flashbotsProvider: this.flashbotsProvider, privateTx, maxBlockNumber: targetBlock });
+			sendBundle({ flashbotsProvider: this.flashbotsProvider, privateTxs: [privateTx], targetBlockNumber: targetBlock });
 		}
 	}
 }
