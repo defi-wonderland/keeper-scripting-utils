@@ -50,7 +50,7 @@ export class StealthBroadcastor {
 
 		console.log(`Attempting to work strategy statically succeeded. Preparing real transaction...`);
 
-		const nextBlock = block.number + 1;
+		const nextBlock = ++block.number;
 
 		const targetBlocks = calculateTargetBlocks(this.burstSize, nextBlock);
 
