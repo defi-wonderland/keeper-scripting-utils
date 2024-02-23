@@ -20,7 +20,7 @@ export class MempoolBroadcastor {
 		public doStaticCall = true
 	) {}
 
-	tryToWorkOnMempool = async (props: BroadcastorProps): Promise<void> => {
+	tryToWork = async (props: BroadcastorProps): Promise<void> => {
 		const { jobContract, workMethod, workArguments, block } = props;
 
 		const txSigner = jobContract.signer as Wallet;

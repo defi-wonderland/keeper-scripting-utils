@@ -1,6 +1,6 @@
 import { SendAndHandleResponseProps } from 'types';
 
-export async function sendAndHandleResponse(props: SendAndHandleResponseProps) {
+export async function sendAndHandleResponse(props: SendAndHandleResponseProps): Promise<void> {
 	const { flashbotsProvider, privateTx, maxBlockNumber } = props;
 
 	try {

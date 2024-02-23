@@ -14,17 +14,17 @@ import { BigNumber } from 'ethers';
  * @return An object containing the provided priority fee in gwei and the calculated maxFeePerGas.
  */
 export function getMainnetGasType2Parameters(props: GetMainnetGasType2ParametersProps): GasType2Parameters {
-	const { block, priorityFeeInWei, burstSize } = props;
+	const { block, priorityFeeInWei, blocksAhead } = props;
 
 	if (!block.baseFeePerGas) {
 		throw new Error('Missing property baseFeePerGas on block');
 	}
 
-	if (burstSize === 0 || burstSize === 1) {
+	if (blocksAhead === 0 || blocksAhead === 1) {
 		return getGasParametersNextBlock({ block, priorityFeeInWei });
 	}
 
-	const maxBaseFee = FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, burstSize);
+	const maxBaseFee = FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksAhead);
 
 	const priorityFee = BigNumber.from(priorityFeeInWei);
 	const maxFeePerGas = maxBaseFee.add(priorityFee);

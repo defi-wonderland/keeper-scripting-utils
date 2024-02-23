@@ -36,12 +36,12 @@ export interface SendTxProps {
  *
  * @param block            The current block.
  * @param priorityFeeInWei The priority fee that will be used for the transaction being formatted.
- * @param burstSize        The number blocks to send the transaction to. Can also be interpreted as the number of blocks into the future to use when calculating the maximum base fee.
+ * @param blocksAhead      The number blocks to send the transaction to. Can also be interpreted as the number of blocks into the future to use when calculating the maximum base fee.
  */
 export interface GetMainnetGasType2ParametersProps {
 	block: Block;
 	priorityFeeInWei: number;
-	burstSize: number;
+	blocksAhead: number;
 }
 
 /**
@@ -58,6 +58,32 @@ export interface SendAndHandleResponseProps {
 }
 
 /**
+ * @notice sendPrivateTransaction includes all parameters required to call sendPrivateTransaction function
+ *
+ * @param endpoint 			The endpoint to hit.
+ * @param privateTx         The private flashbots transaction to send serialized.
+ * @param maxBlockNumber    The maximum block number at this transaction will try to be included as a hex string
+ */
+export interface SendPrivateTransactionProps {
+	endpoint: string;
+	privateTx: string;
+	maxBlockNumber?: string;
+}
+
+/**
+ * @notice SendBundleProps includes all parameters required to call SendBundleProps function
+ *
+ * @param flashbotsProvider A flashbots provider.
+ * @param privateTx         The private flashbots transactions to send.
+ * @param targetBlockNumber The block number at which flashbots will try to include the transaction.
+ */
+export interface SendBundleProps {
+	flashbotsProvider: FlashbotsBundleProvider;
+	privateTxs: FlashbotsBundleTransaction[];
+	targetBlockNumber: number;
+}
+
+/**
  * @notice GetGasParametersNextBlockProps includes all base properties required to compute the maxFeePerGas property
  * 		   in order to format a transaction to type 2.
  *
@@ -67,4 +93,17 @@ export interface SendAndHandleResponseProps {
 export interface GetGasParametersNextBlockProps {
 	block: Block;
 	priorityFeeInWei: number;
+}
+
+/**
+ * @notice sendPrivateBundle includes all parameters required to call sendPrivateBundle function
+ *
+ * @param endpoints 		The endpoints to hit.
+ * @param privateTx         The private flashbots transaction to send serialized.
+ * @param targetBlock       The block number where this bundle will be valid.
+ */
+export interface SendPrivateBundleProps {
+	endpoints: string[];
+	privateTx: string;
+	targetBlock?: string;
 }
