@@ -1,36 +1,31 @@
-import { calculateTargetBlocks, getStealthHash } from '../flashbots';
+import { getStealthHash } from '../flashbots';
 import { getMainnetGasType2Parameters, populateTx, sendBundle } from '../transactions';
 import type { TransactionRequest } from '@ethersproject/abstract-provider';
-import type { FlashbotsBundleTransaction, FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
-import type { Wallet, Overrides, Contract } from 'ethers';
+import { Contract, Overrides, Wallet, ethers } from 'ethers';
 import { BroadcastorProps } from 'types';
 
 /**
- * @notice Creates and populate a transaction for work in a determinated job using flashbots
+ * @notice Creates and populate a private transaction to work a specific job
  *
- * @param flashbotsProvider The flashbots provider. It contains a JSON or WSS provider
- * @param flashbots			    The flashbot that will send the bundle
- * @param burstSize 		    The amount of transactions for future blocks to be broadcast each time
+ * @param endpoints         The endpoint urls
+ * @param stealthRelayer    The address of the StealthRelayer contract.
  * @param priorityFeeInWei  The priority fee in wei
- * @param gasLimit			    The gas limit determines the maximum gas that can be spent in the transaction
- * @param doStaticCall		  Flag to determinate whether to perform a callStatic to work or not. Defaults to true.
+ * @param gasLimit			The gas limit determines the maximum gas that can be spent in the transaction
+ * @param doStaticCall		Flag to determinate whether to perform a callStatic to work or not. Defaults to true.
+ * @param chainId		    The chainId.
  *
  */
 export class StealthBroadcastor {
-	public chainId: number;
-
 	constructor(
-		public flashbotsProvider: FlashbotsBundleProvider,
+		public endpoints: string[],
 		public stealthRelayer: Contract,
 		public priorityFeeInWei: number,
 		public gasLimit: number,
-		public burstSize: number,
-		public doStaticCall = true
-	) {
-		this.chainId = flashbotsProvider.network.chainId;
-	}
+		public doStaticCall = true,
+		public chainId: number
+	) {}
 
-	async tryToWorkOnStealthRelayer(props: BroadcastorProps): Promise<void> {
+	async tryToWork(props: BroadcastorProps): Promise<void> {
 		const { jobContract, workMethod, workArguments, block } = props;
 
 		const stealthHash = getStealthHash();
@@ -47,16 +42,15 @@ export class StealthBroadcastor {
 			}
 		}
 
-		console.log(`Attempting to work strategy statically succeeded. Preparing real transaction...`);
+		console.log(`Attempting to work strategy statically succeeded. Preparing real bundle...`);
 
-		const nextBlock = ++block.number;
-
-		const targetBlocks = calculateTargetBlocks(this.burstSize, nextBlock);
+		const blocksAhead = 2;
+		const targetBlock = block.number + blocksAhead;
 
 		const { priorityFee, maxFeePerGas } = getMainnetGasType2Parameters({
 			block,
 			priorityFeeInWei: this.priorityFeeInWei,
-			burstSize: this.burstSize,
+			blocksAhead,
 		});
 
 		const txSigner = jobContract.signer as Wallet;
@@ -70,23 +64,23 @@ export class StealthBroadcastor {
 			maxPriorityFeePerGas: priorityFee,
 			type: 2,
 		};
-		for (const targetBlock of targetBlocks) {
-			const tx: TransactionRequest = await populateTx({
-				contract: this.stealthRelayer,
-				functionName: 'execute',
-				functionArgs: [jobContract.address, workData, stealthHash, targetBlock],
-				options,
-				chainId: this.chainId,
-			});
 
-			const privateTx: FlashbotsBundleTransaction = {
-				transaction: tx,
-				signer: txSigner,
-			};
+		const tx: TransactionRequest = await populateTx({
+			contract: this.stealthRelayer,
+			functionName: 'execute',
+			functionArgs: [jobContract.address, workData, stealthHash, targetBlock],
+			options,
+			chainId: this.chainId,
+		});
 
-			console.log('Transaction populated successfully. Sending bundle...');
+		const privateTx = await txSigner.signTransaction(tx);
 
-			await sendBundle({ flashbotsProvider: this.flashbotsProvider, privateTxs: [privateTx], targetBlockNumber: targetBlock });
-		}
+		console.log(`Bundle populated successfully. Sending private bundle for strategy: ${workArguments}`);
+
+		await sendBundle({
+			endpoints: this.endpoints,
+			privateTx,
+			targetBlock: ethers.utils.hexlify(targetBlock).toString(),
+		});
 	}
 }

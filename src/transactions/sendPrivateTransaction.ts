@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { SendPrivateTransactionProps } from 'types';
 
-export async function sendPrivateTransaction(props: SendPrivateTransactionProps) {
+export async function sendPrivateTransaction(props: SendPrivateTransactionProps): Promise<void> {
 	const { endpoint, privateTx, maxBlockNumber } = props;
 
 	const requestData = {
@@ -24,7 +24,6 @@ export async function sendPrivateTransaction(props: SendPrivateTransactionProps)
 		});
 
 		console.log(response.data);
-		return;
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
 			console.error('Axios error message:', error.message);
@@ -34,6 +33,5 @@ export async function sendPrivateTransaction(props: SendPrivateTransactionProps)
 		} else {
 			console.error('Unexpected error:', error);
 		}
-		return;
 	}
 }

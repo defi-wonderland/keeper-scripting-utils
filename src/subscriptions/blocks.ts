@@ -9,6 +9,9 @@ type CallbackFunction = (block: Block) => Promise<void>;
  *
  */
 export class BlockListener {
+	private destroyed = false;
+	private intervals: NodeJS.Timeout[] = [];
+
 	/**
 	 * @param provider - JsonRpc provider that has the methods needed to fetch and listen for new blocks.
 	 */
@@ -32,6 +35,8 @@ export class BlockListener {
 	 */
 	stream(cb: CallbackFunction, intervalDelay = 0, blockDelay = 0): void {
 		const start = async () => {
+			if (this.destroyed) return;
+
 			// save latest block number, in order to avoid old block dumps
 			let latestBlockNumber = await this.provider.getBlockNumber();
 
@@ -39,6 +44,8 @@ export class BlockListener {
 
 			// listen for next block
 			this.provider.on('block', async (blockNumber) => {
+				if (this.destroyed) return;
+
 				// avoid having old dump of blocks
 				if (blockNumber <= latestBlockNumber) return;
 				latestBlockNumber = blockNumber;
@@ -50,6 +57,8 @@ export class BlockListener {
 
 				// delay the block arrival a bit, for ankr to have time to sync
 				setTimeout(async () => {
+					if (this.destroyed) return;
+
 					// double check that the block to process is actually the latest
 					if (blockNumber < latestBlockNumber) return;
 
@@ -67,11 +76,19 @@ export class BlockListener {
 
 		if (intervalDelay > 0) {
 			// get next block every {intervalDelay} of sleep
-			setInterval(start, intervalDelay);
+			const interval = setInterval(start, intervalDelay);
+			this.intervals.push(interval);
 		}
 	}
 
 	stop(): void {
 		this.provider.removeAllListeners('block');
+	}
+
+	destroy(): void {
+		this.destroyed = true;
+		this.stop();
+		this.intervals.forEach((interval) => clearInterval(interval));
+		this.intervals = [];
 	}
 }

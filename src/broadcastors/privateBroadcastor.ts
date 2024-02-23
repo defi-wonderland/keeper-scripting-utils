@@ -1,14 +1,12 @@
-import { getStealthHash } from '../flashbots';
-import { getGasParametersNextBlock, populateTx, sendPrivateTransaction } from '../transactions';
+import { getMainnetGasType2Parameters, populateTx, sendBundle } from '../transactions';
 import type { TransactionRequest } from '@ethersproject/abstract-provider';
-import { Contract, Overrides, Wallet, ethers } from 'ethers';
+import { Wallet, Overrides, ethers } from 'ethers';
 import { BroadcastorProps } from 'types';
 
 /**
  * @notice Creates and populate a private transaction to work a specific job
  *
- * @param endpoint          The endpoint url
- * @param stealthRelayer    The address of the StealthRelayer contract.
+ * @param endpoints         The endpoint urls
  * @param priorityFeeInWei  The priority fee in wei
  * @param gasLimit			The gas limit determines the maximum gas that can be spent in the transaction
  * @param doStaticCall		Flag to determinate whether to perform a callStatic to work or not. Defaults to true.
@@ -17,23 +15,19 @@ import { BroadcastorProps } from 'types';
  */
 export class PrivateBroadcastor {
 	constructor(
-		public endpoint: string,
-		public stealthRelayer: Contract,
+		public endpoints: string[],
 		public priorityFeeInWei: number,
 		public gasLimit: number,
 		public doStaticCall = true,
 		public chainId: number
 	) {}
 
-	async tryToWorkOnStealthRelayer(props: BroadcastorProps): Promise<void> {
+	async tryToWork(props: BroadcastorProps): Promise<void> {
 		const { jobContract, workMethod, workArguments, block } = props;
-
-		const stealthHash = getStealthHash();
-		const workData = jobContract.interface.encodeFunctionData(workMethod, [...workArguments]);
 
 		if (this.doStaticCall) {
 			try {
-				await this.stealthRelayer.callStatic.execute(jobContract.address, workData, stealthHash, block.number);
+				await jobContract.callStatic[workMethod](...workArguments);
 			} catch (error: unknown) {
 				if (error instanceof Error) {
 					console.log(`Static call failed with ${error.message}`);
@@ -42,9 +36,14 @@ export class PrivateBroadcastor {
 			}
 		}
 
-		console.log(`Attempting to work strategy statically succeeded. Preparing real transaction...`);
+		const blocksAhead = 2;
+		const targetBlock = block.number + blocksAhead;
 
-		const { priorityFee, maxFeePerGas } = getGasParametersNextBlock({ block, priorityFeeInWei: this.priorityFeeInWei });
+		const { priorityFee, maxFeePerGas } = getMainnetGasType2Parameters({
+			block,
+			priorityFeeInWei: this.priorityFeeInWei,
+			blocksAhead,
+		});
 
 		const txSigner = jobContract.signer as Wallet;
 
@@ -57,22 +56,22 @@ export class PrivateBroadcastor {
 			maxPriorityFeePerGas: priorityFee,
 			type: 2,
 		};
+
 		const tx: TransactionRequest = await populateTx({
-			contract: this.stealthRelayer,
-			functionName: 'execute',
-			functionArgs: [jobContract.address, workData, stealthHash, block.number],
+			contract: jobContract,
+			functionName: workMethod,
+			functionArgs: [...workArguments],
 			options,
 			chainId: this.chainId,
 		});
 
 		const privateTx = await txSigner.signTransaction(tx);
+		console.log(`Bundle populated successfully. Sending private bundle: ${workArguments}`);
 
-		console.log(`Transaction populated successfully. Sending private transaction for strategy: ${workArguments}`);
-
-		await sendPrivateTransaction({
-			endpoint: this.endpoint,
+		await sendBundle({
+			endpoints: this.endpoints,
 			privateTx,
-			maxBlockNumber: ethers.utils.hexlify(block.number).toString(),
+			targetBlock: ethers.utils.hexlify(targetBlock).toString(),
 		});
 	}
 }

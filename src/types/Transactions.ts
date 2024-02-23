@@ -36,12 +36,12 @@ export interface SendTxProps {
  *
  * @param block            The current block.
  * @param priorityFeeInWei The priority fee that will be used for the transaction being formatted.
- * @param burstSize        The number blocks to send the transaction to. Can also be interpreted as the number of blocks into the future to use when calculating the maximum base fee.
+ * @param blocksAhead      The number blocks to send the transaction to. Can also be interpreted as the number of blocks into the future to use when calculating the maximum base fee.
  */
 export interface GetMainnetGasType2ParametersProps {
 	block: Block;
 	priorityFeeInWei: number;
-	burstSize: number;
+	blocksAhead: number;
 }
 
 /**
@@ -93,4 +93,17 @@ export interface SendBundleProps {
 export interface GetGasParametersNextBlockProps {
 	block: Block;
 	priorityFeeInWei: number;
+}
+
+/**
+ * @notice sendPrivateBundle includes all parameters required to call sendPrivateBundle function
+ *
+ * @param endpoints 		The endpoints to hit.
+ * @param privateTx         The private flashbots transaction to send serialized.
+ * @param targetBlock       The block number where this bundle will be valid.
+ */
+export interface SendPrivateBundleProps {
+	endpoints: string[];
+	privateTx: string;
+	targetBlock?: string;
 }
