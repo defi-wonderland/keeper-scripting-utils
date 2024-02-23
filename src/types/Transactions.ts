@@ -58,6 +58,19 @@ export interface SendAndHandleResponseProps {
 }
 
 /**
+ * @notice sendPrivateTransaction includes all parameters required to call sendPrivateTransaction function
+ *
+ * @param endpoint 			The endpoint to hit.
+ * @param privateTx         The private flashbots transaction to send serialized.
+ * @param maxBlockNumber    The maximum block number at this transaction will try to be included as a hex string
+ */
+export interface SendPrivateTransactionProps {
+	endpoint: string;
+	privateTx: string;
+	maxBlockNumber?: string;
+}
+
+/**
  * @notice SendBundleProps includes all parameters required to call SendBundleProps function
  *
  * @param flashbotsProvider A flashbots provider.
