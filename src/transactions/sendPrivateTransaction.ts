@@ -3,7 +3,6 @@ import { SendPrivateTransactionProps } from 'types';
 
 export async function sendPrivateTransaction(props: SendPrivateTransactionProps) {
 	const { endpoint, privateTx, maxBlockNumber } = props;
-	const count = 0;
 
 	const requestData = {
 		jsonrpc: '2.0',
@@ -17,7 +16,6 @@ export async function sendPrivateTransaction(props: SendPrivateTransactionProps)
 		id: '1',
 	};
 
-	if (count == 1) return;
 	try {
 		const response = await axios.post(endpoint, requestData, {
 			headers: {
