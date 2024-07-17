@@ -30,7 +30,11 @@ export class PrivateBroadcastor {
 				await jobContract.callStatic[workMethod](...workArguments);
 			} catch (error: unknown) {
 				if (error instanceof Error) {
-					console.log(`Static call failed with ${error.message}`);
+					console.log(
+						`Static call failed. Job contract: ${jobContract.address}. Work method: ${workMethod}. Work arguments: ${[
+							...workArguments,
+						].join(', ')}. Error message: ${error.message}`
+					);
 				}
 				return;
 			}

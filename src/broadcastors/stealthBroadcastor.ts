@@ -36,7 +36,11 @@ export class StealthBroadcastor {
 				await this.stealthRelayer.callStatic.execute(jobContract.address, workData, stealthHash, block.number);
 			} catch (error: unknown) {
 				if (error instanceof Error) {
-					console.log(`Static call failed with ${error.message}`);
+					console.log(
+						`Static call failed. Job contract: ${jobContract.address}. Work method: ${workMethod}. Work arguments: ${[
+							...workArguments,
+						].join(', ')}. Error message: ${error.message}`
+					);
 				}
 				return;
 			}
