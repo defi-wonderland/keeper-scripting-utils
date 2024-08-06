@@ -1,6 +1,6 @@
 {
   "name": "@keep3r-network/keeper-scripting-utils",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A library containing helper functions that facilitate scripting for keepers of the Keep3r Network",
   "keywords": [
     "ethereum",
@@ -61,7 +61,8 @@
     "*.ts": "yarn lint"
   },
   "dependencies": {
-    "@flashbots/ethers-provider-bundle": "0.5.0",
+    "@flashbots/ethers-provider-bundle": "0.6.1",
+    "axios": "1.6.7",
     "chalk": "4.1.1",
     "dotenv": "16.0.1",
     "ethers": "5.6.9",
