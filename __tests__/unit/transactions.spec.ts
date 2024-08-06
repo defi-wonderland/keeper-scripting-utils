@@ -37,17 +37,17 @@ describe('transactions', () => {
 			const expectedError = new Error('Missing property baseFeePerGas on block');
 
 			try {
-				gasModule.getMainnetGasType2Parameters({ block: emptyBlock, burstSize: 2, priorityFeeInWei });
+				gasModule.getMainnetGasType2Parameters({ block: emptyBlock, blocksAhead: 2, priorityFeeInWei });
 			} catch (err) {
 				expect(err).toStrictEqual(expectedError);
 			}
 		});
 
 		it('should call getBaseFeeInNextBlock when blocksAhead is 0', async () => {
-			const burstSize = 0;
+			const blocksAhead = 0;
 			when(FlashbotsBundleProvider.getBaseFeeInNextBlock).mockReturnValue(mockFlashbotsResponse);
 
-			gasModule.getMainnetGasType2Parameters({ block: FAKE_BLOCK, burstSize, priorityFeeInWei });
+			gasModule.getMainnetGasType2Parameters({ block: FAKE_BLOCK, blocksAhead, priorityFeeInWei });
 
 			expect(FlashbotsBundleProvider.getBaseFeeInNextBlock).toHaveBeenCalledWith(
 				FAKE_BLOCK.baseFeePerGas,
@@ -57,10 +57,10 @@ describe('transactions', () => {
 		});
 
 		it('should call getBaseFeeInNextBlock when blocksAhead is 1', async () => {
-			const burstSize = 1;
+			const blocksAhead = 1;
 			when(FlashbotsBundleProvider.getBaseFeeInNextBlock).mockReturnValue(mockFlashbotsResponse);
 
-			gasModule.getMainnetGasType2Parameters({ block: FAKE_BLOCK, burstSize, priorityFeeInWei });
+			gasModule.getMainnetGasType2Parameters({ block: FAKE_BLOCK, blocksAhead, priorityFeeInWei });
 
 			expect(FlashbotsBundleProvider.getBaseFeeInNextBlock).toHaveBeenCalledWith(
 				FAKE_BLOCK.baseFeePerGas,
@@ -70,12 +70,12 @@ describe('transactions', () => {
 		});
 
 		it('should call getMaxBaseFeeInFutureBlock when blocksAhead is more than 1', async () => {
-			const burstSize = 2;
+			const blocksAhead = 2;
 			when(FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock).mockReturnValue(mockFlashbotsResponse);
 
-			gasModule.getMainnetGasType2Parameters({ block: FAKE_BLOCK, burstSize, priorityFeeInWei });
+			gasModule.getMainnetGasType2Parameters({ block: FAKE_BLOCK, blocksAhead, priorityFeeInWei });
 
-			expect(FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock).toHaveBeenCalledWith(FAKE_BLOCK.baseFeePerGas, burstSize);
+			expect(FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock).toHaveBeenCalledWith(FAKE_BLOCK.baseFeePerGas, blocksAhead);
 		});
 
 		it('should return the right maxFeePerGas', async () => {
@@ -85,7 +85,7 @@ describe('transactions', () => {
 
 			const maxFeePerGas = BigNumber.from(priorityFeeInWei).add(mockFlashbotsResponse);
 
-			const fnCall = gasModule.getMainnetGasType2Parameters({ block: FAKE_BLOCK, burstSize: 2, priorityFeeInWei });
+			const fnCall = gasModule.getMainnetGasType2Parameters({ block: FAKE_BLOCK, blocksAhead: 2, priorityFeeInWei });
 			expect(fnCall.maxFeePerGas).toEqual(maxFeePerGas);
 		});
 
@@ -95,7 +95,7 @@ describe('transactions', () => {
 			when(FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock).mockReturnValue(mockFlashbotsResponse);
 
 			const maxFeePerGas = BigNumber.from(priorityFeeInWei).add(mockFlashbotsResponse);
-			expect(gasModule.getMainnetGasType2Parameters({ block: FAKE_BLOCK, burstSize: 2, priorityFeeInWei })).toEqual({
+			expect(gasModule.getMainnetGasType2Parameters({ block: FAKE_BLOCK, blocksAhead: 2, priorityFeeInWei })).toEqual({
 				priorityFee: BigNumber.from(priorityFeeInWei),
 				maxFeePerGas,
 			});
